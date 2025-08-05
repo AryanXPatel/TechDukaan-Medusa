@@ -1,0 +1,11 @@
+Product Id,Product Handle,Product Title,Product Subtitle,Product Description,Product Status,Product Thumbnail,Product Weight,Product Length,Product Width,Product Height,Product Origin Country,Product Material,Product Collection Id,Product Type Id,Product Discountable,Product External Id,Product Created At,Product Deleted At,Product Hs Code,Product Is Giftcard,Product Mid Code,Product Sales Channel 1,Product Tag 1,Product Tag 2,Product Tag 3,Product Tag 4,Product Tag 5,Product Updated At,Variant Id,Variant Title,Variant Sku,Variant Upc,Variant Ean,Variant Hs Code,Variant Mid Code,Variant Manage Inventory,Variant Allow Backorder,Variant Barcode,Variant Created At,Variant Deleted At,Variant Height,Variant Length,Variant Material,Variant Metadata,Variant Option 1 Name,Variant Option 1 Value,Variant Origin Country,Variant Price EUR,Variant Product Id,Variant Updated At,Variant Variant Rank,Variant Weight,Variant Width
+prod_01K1QGRA13BC9D0JJS5RM7XP9C,test-laptop,Test Laptop,,,published,,,,,,,,,,true,,2025-08-03T08:28:44.462Z,,,false,,sc_01K1Q70F3DF11FWKY3GJZYJWK6,,,,,,2025-08-03T08:28:44.462Z,variant_01K1QGRA5DQJDKZFZ2AS263P9C,HP,,,,,,false,false,,2025-08-03T08:28:44.591Z,,,,,,Default option,Default option value,,100,prod_01K1QGRA13BC9D0JJS5RM7XP9C,2025-08-03T08:28:44.591Z,0,,
+prod_01K1QRFN6KAJ46SRZERZQD04GX,dell-latitude-5520-i5-16gb-512gb,"Dell Latitude 5520 - Intel i5 11th Gen, 16GB RAM, 512GB SSD",," Processor: Intel Core i5-1145G7 (11th Gen)
+- RAM: 16GB DDR4
+- Storage: 512GB NVMe SSD
+- Display: 15.6"" FHD (1920x1080)
+- Condition: Grade A - Excellent
+- Battery: 85%+ Health
+- Warranty: 6 Months TechDukkan Warranty
+- Original Price: ¹85,000
+- Your Price: ¹42,999",draft,,,,,,,,pcol_01K1QQX8P343WGZ4XC5NNM1W76,,true,,2025-08-03T10:43:49.589Z,,,false,,sc_01K1Q70F3DF11FWKY3GJZYJWK6,16GB RAM,512GB SSD,Intel i5,Grade A,Under Warranty,2025-08-03T10:44:43.341Z,variant_01K1QRFNEZAQH3WAYY6YSRQANK,Default variant,,,,,,false,false,,2025-08-03T10:43:49.856Z,,,,,,Default option,Default option value,,,prod_01K1QRFN6KAJ46SRZERZQD04GX,2025-08-03T10:43:49.856Z,0,,
