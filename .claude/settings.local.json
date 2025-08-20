@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__serena__list_dir",
+      "Bash(ls -la src/scripts/)",
+      "Bash(find src -type f -name \"*.ts\" -o -name \"*.js\")",
+      "Bash(find src/ -name \"README.md\" -exec echo \"=== {} ===\" ; -exec head -20 {} ;)",
+      "Bash(find . -name \"README.md\")",
+      "Bash(ls -la integration-tests/)",
+      "Bash(find src -name \"README.md\")",
+      "Bash(find integration-tests -name \"*.ts\" -o -name \"*.js\")"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "zen"
+  ]
+}
