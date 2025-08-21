@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  # Medusa Backend Server
+  medusa-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medusa-server
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env.production
+    environment:
+      - MEDUSA_WORKER_MODE=server
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - meilisearch
+
+  # Medusa Worker (for background jobs)
+  medusa-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medusa-worker
+    env_file:
+      - .env.production
+    environment:
+      - MEDUSA_WORKER_MODE=worker
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - meilisearch
+
+  # Redis (for caching and jobs)
+  redis:
+    image: redis:7-alpine
+    container_name: techdukkan-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # MeiliSearch (for product search)
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: techdukkan-meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    volumes:
+      - meili_data:/meili_data
+    restart: unless-stopped
+
+volumes:
+  meili_data:
