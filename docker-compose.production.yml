@@ -49,6 +49,8 @@ services:
     container_name: techdukkan-meilisearch
     ports:
       - "7700:7700"
+    env_file:
+      - .env.production
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     volumes:
