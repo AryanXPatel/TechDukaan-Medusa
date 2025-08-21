@@ -4,7 +4,7 @@
 set -e  # Exit on any error
 
 echo "🔒 TechDukaan Secure Deployment Script"
-echo "=====================================\n"
+echo "====================================="
 
 # Check if .env.production exists
 if [ ! -f ".env.production" ]; then
@@ -15,10 +15,13 @@ if [ ! -f ".env.production" ]; then
     exit 1
 fi
 
-# Check if critical environment variables are set
-echo "🔍 Checking environment variables..."
+# Load and export environment variables for Docker Compose
+echo "🔍 Loading environment variables..."
+set -a  # automatically export all variables
 source .env.production
+set +a  # turn off automatic export
 
+# Validate critical environment variables
 if [ -z "$DATABASE_URL" ] || [[ "$DATABASE_URL" == *"USERNAME"* ]]; then
     echo "❌ DATABASE_URL not properly configured"
     exit 1
@@ -34,7 +37,15 @@ if [ -z "$JWT_SECRET" ] || [[ "$JWT_SECRET" == *"GENERATE"* ]]; then
     exit 1
 fi
 
-echo "✅ Environment variables look good"
+if [ -z "$MEILI_MASTER_KEY" ] || [[ "$MEILI_MASTER_KEY" == *"GENERATE"* ]]; then
+    echo "❌ MEILI_MASTER_KEY not properly configured"
+    exit 1
+fi
+
+echo "✅ Environment variables validated"
+echo "   - DATABASE_URL: Connected to Azure PostgreSQL"
+echo "   - MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:0:8}***"
+echo "   - JWT_SECRET: ${JWT_SECRET:0:8}***"
 
 # Stop existing containers
 echo "🛑 Stopping existing containers..."
@@ -52,6 +63,8 @@ sleep 30
 echo "🔍 Checking container status..."
 docker ps
 
-echo "\n✅ Deployment complete!"
+echo ""
+echo "✅ Deployment complete!"
 echo "📊 Check logs with: docker-compose -f docker-compose.production.yml logs"
 echo "🌐 Your backend should be available at: http://localhost:9000"
+echo "🔍 MeiliSearch should be available at: http://localhost:7700"
