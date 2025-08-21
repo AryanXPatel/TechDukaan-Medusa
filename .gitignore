@@ -34,4 +34,4 @@ azure-credentials.json
 !.yarn/sdks
 !.yarn/versions
 
-.medusa
+.medusa.env.production.ubuntu

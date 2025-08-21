@@ -23,21 +23,30 @@ module.exports = defineConfig({
       }
     })
   },
-  modules: {
+  plugins: [
     // MeiliSearch integration
-    ...(process.env.MEILI_HTTP_ADDR && {
-      searchService: {
-        resolve: "@medusajs/search",
-        options: {
-          provider: "meilisearch",
-          config: {
-            host: process.env.MEILI_HTTP_ADDR,
-            apiKey: process.env.MEILI_MASTER_KEY,
-          }
-        }
-      }
-    })
-  },
+    ...(process.env.MEILI_HTTP_ADDR ? [{
+      resolve: '@rokmohar/medusa-plugin-meilisearch',
+      options: {
+        config: {
+          host: process.env.MEILI_HTTP_ADDR,
+          apiKey: process.env.MEILI_MASTER_KEY,
+        },
+        settings: {
+          products: {
+            type: 'products',
+            enabled: true,
+            fields: ['id', 'title', 'description', 'handle', 'variant_sku', 'thumbnail'],
+            indexSettings: {
+              searchableAttributes: ['title', 'description', 'variant_sku'],
+              displayedAttributes: ['id', 'handle', 'title', 'description', 'variant_sku', 'thumbnail'],
+              filterableAttributes: ['id', 'handle'],
+            },
+          },
+        },
+      },
+    }] : [])
+  ],
   featureFlags: {
     product_categories: true,
   }
