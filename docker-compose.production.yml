@@ -12,24 +12,10 @@ services:
     env_file:
       - .env.production
     environment:
-      - MEDUSA_WORKER_MODE=server
+      - WORKER_MODE=shared
+      - ADMIN_DISABLED=false
     volumes:
       - ./uploads:/app/uploads
-    restart: unless-stopped
-    depends_on:
-      - redis
-      - meilisearch
-
-  # Medusa Worker (for background jobs)
-  medusa-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: medusa-worker
-    env_file:
-      - .env.production
-    environment:
-      - MEDUSA_WORKER_MODE=worker
     restart: unless-stopped
     depends_on:
       - redis
@@ -38,7 +24,7 @@ services:
   # Redis (for caching and jobs)
   redis:
     image: redis:7-alpine
-    container_name: techdukkan-redis
+    container_name: redis
     ports:
       - "6379:6379"
     restart: unless-stopped
@@ -46,7 +32,7 @@ services:
   # MeiliSearch (for product search)
   meilisearch:
     image: getmeili/meilisearch:latest
-    container_name: techdukkan-meilisearch
+    container_name: meilisearch
     ports:
       - "7700:7700"
     env_file:

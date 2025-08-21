@@ -27,6 +27,12 @@ build
 *.pem
 azure-credentials.json
 
+# Medusa build artifacts
+.medusa/
+
+# Environment files with secrets
+.env.production.ubuntu
+
 .yarn/*
 !.yarn/patches
 !.yarn/plugins

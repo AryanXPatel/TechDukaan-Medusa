@@ -1,6 +1,6 @@
-import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { loadEnv, defineConfig } from "@medusajs/framework/utils";
 
-loadEnv(process.env.NODE_ENV || 'development', process.cwd())
+loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
 module.exports = defineConfig({
   projectConfig: {
@@ -8,46 +8,68 @@ module.exports = defineConfig({
     redisUrl: process.env.REDIS_URL,
     http: {
       storeCors: process.env.STORE_CORS || "http://localhost:3000",
-      adminCors: process.env.ADMIN_CORS || "http://localhost:3000", 
+      adminCors: process.env.ADMIN_CORS || "http://localhost:3000",
       authCors: process.env.AUTH_CORS || "http://localhost:3000",
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
     // Azure Blob Storage configuration
-    ...(process.env.STORAGE_PROVIDER === 'azure' && {
+    ...(process.env.STORAGE_PROVIDER === "azure" && {
       fileService: {
         azure: {
           connectionString: process.env.STORAGE_CONNECTION_STRING,
-          containerName: process.env.STORAGE_CONTAINER || 'product-images',
-        }
-      }
-    })
+          containerName: process.env.STORAGE_CONTAINER || "product-images",
+        },
+      },
+    }),
   },
   plugins: [
     // MeiliSearch integration
-    ...(process.env.MEILI_HTTP_ADDR ? [{
-      resolve: '@rokmohar/medusa-plugin-meilisearch',
-      options: {
-        config: {
-          host: process.env.MEILI_HTTP_ADDR,
-          apiKey: process.env.MEILI_MASTER_KEY,
-        },
-        settings: {
-          products: {
-            type: 'products',
-            enabled: true,
-            fields: ['id', 'title', 'description', 'handle', 'variant_sku', 'thumbnail'],
-            indexSettings: {
-              searchableAttributes: ['title', 'description', 'variant_sku'],
-              displayedAttributes: ['id', 'handle', 'title', 'description', 'variant_sku', 'thumbnail'],
-              filterableAttributes: ['id', 'handle'],
+    ...(process.env.MEILI_HTTP_ADDR
+      ? [
+          {
+            resolve: "@rokmohar/medusa-plugin-meilisearch",
+            options: {
+              config: {
+                host: process.env.MEILI_HTTP_ADDR,
+                apiKey: process.env.MEILI_MASTER_KEY,
+              },
+              settings: {
+                products: {
+                  type: "products",
+                  enabled: true,
+                  fields: [
+                    "id",
+                    "title",
+                    "description",
+                    "handle",
+                    "variant_sku",
+                    "thumbnail",
+                  ],
+                  indexSettings: {
+                    searchableAttributes: [
+                      "title",
+                      "description",
+                      "variant_sku",
+                    ],
+                    displayedAttributes: [
+                      "id",
+                      "handle",
+                      "title",
+                      "description",
+                      "variant_sku",
+                      "thumbnail",
+                    ],
+                    filterableAttributes: ["id", "handle"],
+                  },
+                },
+              },
             },
           },
-        },
-      },
-    }] : [])
+        ]
+      : []),
   ],
   featureFlags: {
     product_categories: true,
-  }
-})
+  },
+});
