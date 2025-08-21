@@ -26,6 +26,13 @@ RUN if [ -f .env.production ]; then cp .env.production .env; fi
 # Build the application
 RUN npm run build
 
+# Install dependencies in the built directory
+WORKDIR /app/.medusa/server
+RUN npm install --production
+
+# Copy environment file to built directory
+RUN if [ -f /app/.env.production ]; then cp /app/.env.production .env; fi
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S medusa && \
     adduser -S medusa -u 1001
@@ -44,4 +51,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:9000/health || exit 1
 
 # Default command (can be overridden for worker mode)
-CMD ["sh", "-c", "if [ \"$MEDUSA_WORKER_MODE\" = \"worker\" ]; then npm run start:worker; else npm start; fi"]
+CMD ["sh", "-c", "NODE_ENV=production npm start"]

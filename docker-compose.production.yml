@@ -37,8 +37,6 @@ services:
       - "7700:7700"
     env_file:
       - .env.production
-    environment:
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     volumes:
       - meili_data:/meili_data
     restart: unless-stopped
