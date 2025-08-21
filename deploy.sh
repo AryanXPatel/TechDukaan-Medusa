@@ -67,11 +67,11 @@ sleep 30
 
 # Initialize database (create, migrate, and setup)
 echo "🗄️ Setting up database..."
-docker-compose -f docker-compose.production.yml --env-file .env.production run --rm medusa-server npx medusa db:setup
+docker-compose -f docker-compose.production.yml exec medusa-server npx medusa db:setup
 
 # Create admin user
 echo "👤 Creating admin user..."
-docker-compose -f docker-compose.production.yml --env-file .env.production run --rm medusa-server npx medusa user --email $ADMIN_EMAIL --password $ADMIN_PASSWORD
+docker-compose -f docker-compose.production.yml exec medusa-server npx medusa user --email $ADMIN_EMAIL --password $ADMIN_PASSWORD
 
 # Check container health
 echo "🔍 Checking container status..."
