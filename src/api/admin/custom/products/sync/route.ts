@@ -1,8 +1,7 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework";
-import { ProductService } from "@medusajs/medusa";
 
 export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
-  const productService = req.scope.resolve<ProductService>("productService");
+  const productService = req.scope.resolve("productService");
 
   try {
     const products = await productService.list({});
