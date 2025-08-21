@@ -20,6 +20,9 @@ RUN npm ci --only=production
 # Copy source code
 COPY . .
 
+# Ensure .env file exists for production
+RUN if [ -f .env.production ]; then cp .env.production .env; fi
+
 # Build the application
 RUN npm run build
 
