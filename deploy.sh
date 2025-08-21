@@ -42,10 +42,16 @@ if [ -z "$MEILI_MASTER_KEY" ] || [[ "$MEILI_MASTER_KEY" == *"GENERATE"* ]]; then
     exit 1
 fi
 
+if [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
+    echo "❌ Admin credentials (ADMIN_EMAIL/ADMIN_PASSWORD) not properly configured"
+    exit 1
+fi
+
 echo "✅ Environment variables validated"
 echo "   - DATABASE_URL: Connected to Azure PostgreSQL"
 echo "   - MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:0:8}***"
 echo "   - JWT_SECRET: ${JWT_SECRET:0:8}***"
+echo "   - ADMIN_EMAIL: $ADMIN_EMAIL"
 
 # Stop existing containers
 echo "🛑 Stopping existing containers..."
@@ -53,11 +59,19 @@ docker-compose down 2>/dev/null || true
 
 # Build and start production stack
 echo "🚀 Starting production deployment..."
-docker-compose -f docker-compose.production.yml up -d --build
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d --build
 
 # Wait for containers to start
 echo "⏳ Waiting for containers to start..."
 sleep 30
+
+# Initialize database (create, migrate, and setup)
+echo "🗄️ Setting up database..."
+docker-compose -f docker-compose.production.yml --env-file .env.production run --rm medusa-server npx medusa db:setup
+
+# Create admin user
+echo "👤 Creating admin user..."
+docker-compose -f docker-compose.production.yml --env-file .env.production run --rm medusa-server npx medusa user --email $ADMIN_EMAIL --password $ADMIN_PASSWORD
 
 # Check container health
 echo "🔍 Checking container status..."
@@ -68,3 +82,4 @@ echo "✅ Deployment complete!"
 echo "📊 Check logs with: docker-compose -f docker-compose.production.yml logs"
 echo "🌐 Your backend should be available at: http://localhost:9000"
 echo "🔍 MeiliSearch should be available at: http://localhost:7700"
+echo "👤 Admin login: $ADMIN_EMAIL / $ADMIN_PASSWORD"
