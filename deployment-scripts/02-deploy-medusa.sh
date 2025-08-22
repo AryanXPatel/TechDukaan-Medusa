@@ -5,9 +5,42 @@
 
 set -euo pipefail
 
-# Source utilities
+# Simple logging function
+log() {
+    local level="$1"
+    shift
+    local message="$*"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    case "$level" in
+        "INFO")
+            echo -e "\033[0;34m[INFO]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        "SUCCESS")
+            echo -e "\033[0;32m[SUCCESS]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        "WARN"|"WARNING")
+            echo -e "\033[1;33m[WARN]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        "ERROR")
+            echo -e "\033[0;31m[ERROR]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        *)
+            echo "[$timestamp] $level $message" | tee -a ~/deployment.log
+            ;;
+    esac
+}
+
+# Get external IP
+get_external_ip() {
+    curl -s --max-time 10 ifconfig.me 2>/dev/null || echo "localhost"
+}
+
+# Source utilities if available
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/utils/deployment-utils.sh"
+if [[ -f "$SCRIPT_DIR/utils/deployment-utils.sh" ]]; then
+    source "$SCRIPT_DIR/utils/deployment-utils.sh"
+fi
 
 # Configuration
 readonly COMPOSE_FILE="docker-compose.production.yml"
