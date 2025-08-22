@@ -13,6 +13,13 @@ module.exports = defineConfig({
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
+    // Cookie options for external domain access (available since v2.8.5)
+    cookieOptions: {
+      secure: false, // Set to false for HTTP external access
+      sameSite: "lax", // Allow external IP access while maintaining security
+      httpOnly: true, // Prevent XSS attacks
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    },
     // Azure Blob Storage configuration
     ...(process.env.STORAGE_PROVIDER === "azure" && {
       fileService: {
