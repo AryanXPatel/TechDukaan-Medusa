@@ -102,21 +102,21 @@ install_dependencies() {
 
 # Build admin interface with proper configuration
 build_admin_interface() {
-    log "INFO" "Building admin interface with production configuration..."
+    log "INFO" "Building Medusa backend and admin interface with production configuration..."
     
     # Load environment variables for build
     set -a
     source "$ENV_FILE"
     set +a
     
-    # Build admin interface
-    if ! npm run build:admin; then
-        log "ERROR" "Admin interface build failed"
+    # Build both backend and admin interface using the standard build command
+    if ! npm run build; then
+        log "ERROR" "Medusa build failed"
         log "ERROR" "Check that MEDUSA_ADMIN_BACKEND_URL is correctly configured"
         exit 1
     fi
     
-    log "INFO" "Admin interface built successfully"
+    log "INFO" "Medusa backend and admin interface built successfully"
 }
 
 # Deploy services using Docker Compose
