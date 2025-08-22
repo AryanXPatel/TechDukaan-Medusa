@@ -129,15 +129,15 @@ deploy_services() {
     fi
     
     # Stop existing services
-    if docker-compose -f "$COMPOSE_FILE" ps -q > /dev/null 2>&1; then
+    if docker compose -f "$COMPOSE_FILE" ps -q > /dev/null 2>&1; then
         log "INFO" "Stopping existing services..."
-        docker-compose -f "$COMPOSE_FILE" down
+        docker compose -f "$COMPOSE_FILE" down
     fi
     
     # Build and start services
     log "INFO" "Building and starting services..."
-    docker-compose -f "$COMPOSE_FILE" build --no-cache
-    docker-compose -f "$COMPOSE_FILE" up -d
+    docker compose -f "$COMPOSE_FILE" build --no-cache
+    docker compose -f "$COMPOSE_FILE" up -d
     
     log "INFO" "Services deployed"
 }
@@ -159,7 +159,7 @@ wait_for_services() {
         
         if [[ $attempt -eq $max_attempts ]]; then
             log "ERROR" "Services failed to start within expected time"
-            log "ERROR" "Check service logs: docker-compose -f $COMPOSE_FILE logs"
+            log "ERROR" "Check service logs: docker compose -f $COMPOSE_FILE logs"
             exit 1
         fi
         
@@ -172,7 +172,7 @@ wait_for_services() {
 run_migrations() {
     log "INFO" "Running database migrations..."
     
-    if ! docker-compose -f "$COMPOSE_FILE" exec -T medusa-server npm run migration:run; then
+    if ! docker compose -f "$COMPOSE_FILE" exec -T medusa-server npm run migration:run; then
         log "ERROR" "Database migrations failed"
         log "ERROR" "Check database connectivity and credentials"
         exit 1
@@ -198,7 +198,7 @@ create_admin_user() {
     fi
     
     # Create admin user
-    if ! docker-compose -f "$COMPOSE_FILE" exec -T medusa-server npx medusa user -e "$ADMIN_EMAIL" -p "$ADMIN_PASSWORD"; then
+    if ! docker compose -f "$COMPOSE_FILE" exec -T medusa-server npx medusa user -e "$ADMIN_EMAIL" -p "$ADMIN_PASSWORD"; then
         log "WARN" "Admin user creation failed (user may already exist)"
         log "INFO" "You can create an admin user manually if needed"
     else
@@ -209,7 +209,7 @@ create_admin_user() {
 # Show deployment status
 show_deployment_status() {
     log "INFO" "Deployment status:"
-    docker-compose -f "$COMPOSE_FILE" ps
+    docker compose -f "$COMPOSE_FILE" ps
     
     log "INFO" "Service health checks:"
     if curl -sf http://localhost:9000/health > /dev/null 2>&1; then
@@ -218,13 +218,13 @@ show_deployment_status() {
         log "WARN" "  - API: Not responding"
     fi
     
-    if docker-compose -f "$COMPOSE_FILE" ps redis | grep -q "Up"; then
+    if docker compose -f "$COMPOSE_FILE" ps redis | grep -q "Up"; then
         log "INFO" "  - Redis: Running"
     else
         log "WARN" "  - Redis: Not running"
     fi
     
-    if docker-compose -f "$COMPOSE_FILE" ps meilisearch | grep -q "Up"; then
+    if docker compose -f "$COMPOSE_FILE" ps meilisearch | grep -q "Up"; then
         log "INFO" "  - MeiliSearch: Running"
     else
         log "WARN" "  - MeiliSearch: Not running"

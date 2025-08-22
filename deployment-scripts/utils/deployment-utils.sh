@@ -89,8 +89,8 @@ wait_for_containers() {
     log_info "Waiting for containers to start (max ${max_wait}s)..."
     
     while [ $wait_time -lt $max_wait ]; do
-        local running=$(docker-compose -f "$compose_file" ps --services --filter status=running | wc -l)
-        local total=$(docker-compose -f "$compose_file" ps --services | wc -l)
+        local running=$(docker compose -f "$compose_file" ps --services --filter status=running | wc -l)
+        local total=$(docker compose -f "$compose_file" ps --services | wc -l)
         
         if [ "$running" -eq "$total" ] && [ "$total" -gt 0 ]; then
             log_success "All $total containers are running"
@@ -173,7 +173,7 @@ check_system_requirements() {
     fi
     
     # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    if ! docker compose version &> /dev/null; then
         errors+=("Docker Compose not installed")
     fi
     
@@ -195,7 +195,7 @@ test_database_connection() {
     local max_retries="${2:-5}"
     
     for ((i=1; i<=max_retries; i++)); do
-        if docker-compose -f "$compose_file" exec -T medusa-server npx medusa migrations list &>/dev/null; then
+        if docker compose -f "$compose_file" exec -T medusa-server npx medusa migrations list &>/dev/null; then
             log_success "Database connection successful"
             return 0
         fi
@@ -248,7 +248,7 @@ get_deployment_status() {
     
     echo "=== Docker Containers ==="
     if [ -f "$compose_file" ]; then
-        docker-compose -f "$compose_file" ps
+        docker compose -f "$compose_file" ps
     else
         echo "Docker Compose file not found"
     fi
