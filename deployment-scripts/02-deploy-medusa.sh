@@ -172,7 +172,7 @@ wait_for_services() {
 run_migrations() {
     log "INFO" "Running database migrations..."
     
-    if ! docker compose -f "$COMPOSE_FILE" exec -T medusa-server npm run migration:run; then
+    if ! docker compose -f "$COMPOSE_FILE" exec -T medusa-server npx medusa migrations run; then
         log "ERROR" "Database migrations failed"
         log "ERROR" "Check database connectivity and credentials"
         exit 1
