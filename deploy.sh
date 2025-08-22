@@ -138,6 +138,15 @@ else
     print_status "You can check logs with: docker-compose -f docker-compose.production.yml logs -f"
 fi
 
+# Create admin user
+print_status "Creating admin user..."
+if docker-compose -f docker-compose.production.yml exec -T medusa-server npx medusa user --email $ADMIN_EMAIL --password $ADMIN_PASSWORD 2>/dev/null; then
+    print_status "Admin user created successfully"
+else
+    print_warning "Admin user creation failed or user already exists"
+    print_status "You can manually create with: docker-compose -f docker-compose.production.yml exec medusa-server npx medusa user --email $ADMIN_EMAIL --password $ADMIN_PASSWORD"
+fi
+
 # Get server IP for external testing
 SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "Unable to determine public IP")
 
