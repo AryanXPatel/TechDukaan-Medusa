@@ -46,42 +46,48 @@ fi
 
 # Check if .env.production exists
 if [ ! -f ".env.production" ]; then
-    print_warning ".env.production file not found"
-    print_info "Creating .env.production from template..."
-    
-    if [ ! -f ".env.production.template" ]; then
-        print_error ".env.production.template not found"
-        exit 1
-    fi
-    
-    cp .env.production.template .env.production
-    print_success ".env.production created from template"
-    
+    print_error ".env.production file not found"
     echo ""
-    print_warning "IMPORTANT: You must configure .env.production with your actual values"
-    print_info "The file contains placeholder values that need to be replaced:"
-    print_info "- Database credentials (USERNAME:PASSWORD)"
-    print_info "- Security secrets (generate with openssl rand commands)"
-    print_info "- Azure storage keys"
-    print_info "- Your VM IP address"
+    print_info "🚀 Quick Setup Guide:"
+    print_info "  1. Copy template: cp .env.production.template .env.production"
+    print_info "  2. Edit configuration: nano .env.production"
+    print_info "  3. Replace ALL placeholder values with your actual configuration"
     echo ""
-    
-    read -p "Would you like to edit .env.production in nano now? (Y/n): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        print_info "Opening .env.production in nano..."
-        nano .env.production
-        print_success "Environment file editing completed"
-    else
-        print_warning "You chose to skip editing. Please configure .env.production manually before continuing"
-        print_info "You can edit it later with: nano .env.production"
-    fi
+    print_info "� Find your VM IP address:"
+    print_info "  curl ifconfig.me    # External IP for MEDUSA_ADMIN_BACKEND_URL"
     echo ""
+    print_info "🔐 Generate secrets:"
+    print_info "  openssl rand -base64 32    # For JWT_SECRET"
+    print_info "  openssl rand -base64 16    # For SESSION_SECRET and COOKIE_SECRET (use SAME value!)"
+    print_info "  openssl rand -hex 16       # For MEILI_MASTER_KEY"
+    echo ""
+    print_info "🗄️ Azure Storage Key (find in Azure Portal):"
+    print_info "  Portal > Storage Accounts > sttechdukaanprod > Access keys > Copy key1"
+    echo ""
+    print_warning "⚠️  CRITICAL: SESSION_SECRET and COOKIE_SECRET must have identical values!"
+    echo ""
+    print_info "After editing, run the deployment script again."
+    exit 1
 fi
 
 print_success ".env.production file found"
 
-# Load environment variables for validation
+# Load template values for comparison
+print_info "Loading template for comparison..."
+set -a
+source .env.production.template 2>/dev/null || true
+# Store template values
+TEMPLATE_DATABASE_URL="$DATABASE_URL"
+TEMPLATE_MEDUSA_ADMIN_BACKEND_URL="$MEDUSA_ADMIN_BACKEND_URL"
+TEMPLATE_JWT_SECRET="$JWT_SECRET"
+TEMPLATE_COOKIE_SECRET="$COOKIE_SECRET"
+TEMPLATE_SESSION_SECRET="$SESSION_SECRET"
+TEMPLATE_MEILI_MASTER_KEY="$MEILI_MASTER_KEY"
+TEMPLATE_AZURE_STORAGE_ACCOUNT_KEY="$AZURE_STORAGE_ACCOUNT_KEY"
+set +a
+
+# Load actual production environment variables for validation
+print_info "Loading production configuration..."
 set -a
 source .env.production
 set +a
@@ -102,61 +108,144 @@ REQUIRED_VARS=(
     "MEILI_MASTER_KEY"
 )
 
-# Validate required variables are set
+# Validate required variables are set and different from template
 VALIDATION_FAILED=false
+echo ""
+print_info "🔍 Validating configuration values..."
+
 for var in "${REQUIRED_VARS[@]}"; do
-    if [ -z "${!var}" ]; then
-        print_error "Required variable $var is not set"
+    current_value="${!var}"
+    template_var="TEMPLATE_$var"
+    template_value="${!template_var}"
+    
+    if [ -z "$current_value" ]; then
+        print_error "❌ $var is not set"
         VALIDATION_FAILED=true
-    elif [[ "${!var}" == *"CHANGE_ME"* ]] || [[ "${!var}" == *"YOUR_"* ]] || [[ "${!var}" == *"GENERATE_"* ]] || [[ "${!var}" == *"USERNAME"* ]] || [[ "${!var}" == *"PASSWORD"* ]]; then
-        print_error "Variable $var still contains placeholder value: ${!var}"
+    elif [[ "$current_value" == *"CHANGE_ME"* ]] || [[ "$current_value" == *"YOUR_"* ]] || [[ "$current_value" == *"GENERATE_"* ]] || [[ "$current_value" == *"USERNAME"* ]] || [[ "$current_value" == *"PASSWORD"* ]] || [[ "$current_value" == *"PLACEHOLDER"* ]] || [[ "$current_value" == *"TEMPLATE"* ]]; then
+        print_error "❌ $var still contains placeholder: ${current_value}"
+        case "$var" in
+            "DATABASE_URL")
+                print_info "   💡 Format: postgres://username:password@server.postgres.database.azure.com:5432/database?ssl=true"
+                ;;
+            "MEDUSA_ADMIN_BACKEND_URL")
+                print_info "   💡 Get your IP: curl ifconfig.me"
+                print_info "   💡 Format: http://YOUR_EXTERNAL_IP:9000"
+                ;;
+            "JWT_SECRET")
+                print_info "   💡 Generate: openssl rand -base64 32"
+                ;;
+            "SESSION_SECRET"|"COOKIE_SECRET")
+                print_info "   💡 Generate: openssl rand -base64 16 (use SAME value for both)"
+                ;;
+            "MEILI_MASTER_KEY")
+                print_info "   💡 Generate: openssl rand -hex 16"
+                ;;
+            "AZURE_STORAGE_ACCOUNT_KEY")
+                print_info "   💡 Azure Portal > Storage Accounts > sttechdukaanprod > Access keys"
+                ;;
+        esac
         VALIDATION_FAILED=true
+    elif [ -n "$template_value" ] && [ "$current_value" = "$template_value" ]; then
+        print_error "❌ $var has the same value as template (not customized)"
+        VALIDATION_FAILED=true
+    else
+        print_success "✅ $var is configured"
     fi
 done
 
+# Additional specific validations
+echo ""
+print_info "🔍 Performing additional configuration checks..."
+
+if [[ "$DATABASE_URL" == *"USERNAME:PASSWORD"* ]]; then
+    print_error "❌ DATABASE_URL still contains USERNAME:PASSWORD placeholder"
+    print_info "   💡 Replace with your actual Azure PostgreSQL credentials"
+    VALIDATION_FAILED=true
+fi
+
+if [[ "$MEDUSA_ADMIN_BACKEND_URL" == *"YOUR_VM_IP"* ]]; then
+    print_error "❌ MEDUSA_ADMIN_BACKEND_URL still contains YOUR_VM_IP placeholder"
+    print_info "   💡 Run: curl ifconfig.me to get your external IP"
+    print_info "   💡 Then replace YOUR_VM_IP with the actual IP address"
+    VALIDATION_FAILED=true
+fi
+
+if [[ "$AZURE_STORAGE_ACCOUNT_KEY" == *"YOUR_AZURE_STORAGE_KEY"* ]]; then
+    print_error "❌ AZURE_STORAGE_ACCOUNT_KEY still contains placeholder"
+    print_info "   💡 Get key from: Azure Portal > Storage Accounts > sttechdukaanprod > Access keys"
+    VALIDATION_FAILED=true
+fi
+    VALIDATION_FAILED=true
+fi
+
+if [[ "$AZURE_STORAGE_ACCOUNT_KEY" == *"YOUR_AZURE_STORAGE_KEY"* ]]; then
+    print_error "AZURE_STORAGE_ACCOUNT_KEY still contains placeholder"
+    VALIDATION_FAILED=true
+fi
+
 # Critical validation: SESSION_SECRET must match COOKIE_SECRET
+echo ""
 if [ "$SESSION_SECRET" != "$COOKIE_SECRET" ]; then
-    print_error "SESSION_SECRET must match COOKIE_SECRET for admin interface fix"
-    print_info "Set SESSION_SECRET=$COOKIE_SECRET in .env.production"
+    print_error "❌ SESSION_SECRET must match COOKIE_SECRET for admin interface to work"
+    print_info "   💡 Generate one value and use it for both: openssl rand -base64 16"
+    print_info "   💡 Set both SESSION_SECRET and COOKIE_SECRET to the same value"
     VALIDATION_FAILED=true
 else
-    print_success "SESSION_SECRET correctly matches COOKIE_SECRET"
+    print_success "✅ SESSION_SECRET correctly matches COOKIE_SECRET"
 fi
 
 # Validate secret lengths
 if [ ${#JWT_SECRET} -lt 32 ]; then
-    print_warning "JWT_SECRET is shorter than recommended 32 characters"
+    print_warning "⚠️ JWT_SECRET is shorter than recommended 32 characters"
 fi
 
 if [ ${#COOKIE_SECRET} -lt 16 ]; then
-    print_warning "COOKIE_SECRET is shorter than recommended 16 characters"
+    print_warning "⚠️ COOKIE_SECRET is shorter than recommended 16 characters"
 fi
 
 # Validate external URL format
 if [[ ! "$MEDUSA_ADMIN_BACKEND_URL" =~ ^https?://[^/]+:[0-9]+$ ]]; then
-    print_warning "MEDUSA_ADMIN_BACKEND_URL format may be incorrect: $MEDUSA_ADMIN_BACKEND_URL"
-    print_info "Expected format: http://YOUR_VM_IP:9000"
+    print_warning "⚠️ MEDUSA_ADMIN_BACKEND_URL format may be incorrect: $MEDUSA_ADMIN_BACKEND_URL"
+    print_info "   💡 Expected format: http://YOUR_EXTERNAL_IP:9000"
+    print_info "   💡 Get IP: curl ifconfig.me"
 fi
 
 # Check database URL format
 if [[ ! "$DATABASE_URL" =~ ^postgres://.*@.*:.*/.* ]]; then
-    print_error "DATABASE_URL format appears incorrect"
-    print_info "Expected format: postgres://username:password@server:5432/database?ssl=true"
+    print_error "❌ DATABASE_URL format appears incorrect"
+    print_info "   💡 Expected format: postgres://username:password@server:5432/database?ssl=true"
     VALIDATION_FAILED=true
 fi
 
 if [ "$VALIDATION_FAILED" = true ]; then
     echo ""
-    print_error "Configuration validation failed"
-    print_info "Please fix the issues above in .env.production before continuing"
-    print_info ""
-    print_info "Quick fix commands:"
-    print_info "  Edit file: nano .env.production"
-    print_info "  Generate JWT secret: openssl rand -base64 32"
-    print_info "  Generate session/cookie secret: openssl rand -base64 16"
-    print_info "  Generate MeiliSearch key: openssl rand -hex 16"
-    print_info ""
-    print_info "Make sure SESSION_SECRET and COOKIE_SECRET have the same value!"
+    print_error "❌ Configuration validation failed - placeholder values detected"
+    echo ""
+    print_info "🛠️ Quick Fix Guide:"
+    print_info "  1. Edit configuration: nano .env.production"
+    print_info "  2. Get your VM IP: curl ifconfig.me"
+    print_info "  3. Generate secrets:"
+    print_info "     openssl rand -base64 32    # JWT_SECRET"
+    print_info "     openssl rand -base64 16    # SESSION_SECRET & COOKIE_SECRET (same value)"
+    print_info "     openssl rand -hex 16       # MEILI_MASTER_KEY"
+    print_info "  4. Get Azure Storage Key:"
+    print_info "     Portal > Storage Accounts > sttechdukaanprod > Access keys > Copy key"
+    print_info "  5. Update Database URL with your actual username/password"
+    echo ""
+    print_warning "⚠️ Remember: SESSION_SECRET and COOKIE_SECRET must be identical!"
+    echo ""
+    print_info "After fixing, run the deployment script again."
+    echo ""
+    print_info "📝 To fix this:"
+    print_info "  1. Edit the file: nano .env.production"
+    print_info "  2. Replace all GENERATE_*, YOUR_*, USERNAME, PASSWORD placeholders"
+    print_info "  3. Generate secrets with:"
+    print_info "     openssl rand -base64 32    # For JWT_SECRET"
+    print_info "     openssl rand -base64 16    # For SESSION_SECRET and COOKIE_SECRET"
+    print_info "     openssl rand -hex 16       # For MEILI_MASTER_KEY"
+    print_info "  4. Run deployment script again"
+    echo ""
+    print_warning "⚠️  Remember: SESSION_SECRET and COOKIE_SECRET must have the same value!"
     exit 1
 fi
 

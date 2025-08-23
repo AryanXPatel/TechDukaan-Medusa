@@ -17,17 +17,20 @@ A production-ready e-commerce platform built with Medusa v2.8.8, featuring autom
 ## 📋 Prerequisites
 
 ### System Requirements
+
 - **OS**: Ubuntu 22.04 LTS or newer
 - **RAM**: Minimum 4GB (8GB recommended for production)
 - **Storage**: 20GB free space
 - **Network**: Internet access for package installation
 
 ### Required Software
+
 - **Docker Engine**: Latest version with Compose V2 plugin
 - **Git**: For repository cloning
 - **curl**: For health checks and downloads
 
 ### Access Requirements
+
 - SSH access to deployment server
 - Azure PostgreSQL credentials (for existing database scenarios)
 - GitHub repository access
@@ -37,22 +40,94 @@ A production-ready e-commerce platform built with Medusa v2.8.8, featuring autom
 ### Option 1: Automated Deployment (Recommended)
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/AryanXPatel/TechDukaan-Medusa.git
 cd TechDukaan-Medusa
 
-# Run master deployment script
+# 2. Set up environment configuration
+cp .env.production.template .env.production
+
+# 3. Edit configuration with your actual values
+nano .env.production
+# Replace ALL placeholder values:
+# - USERNAME:PASSWORD in DATABASE_URL
+# - All GENERATE_* secrets (use commands below)
+# - YOUR_VM_IP with actual IP address
+# - Azure storage keys
+
+# 4. Generate required secrets:
+openssl rand -base64 32    # For JWT_SECRET
+openssl rand -base64 16    # For SESSION_SECRET and COOKIE_SECRET (use SAME value!)
+openssl rand -hex 16       # For MEILI_MASTER_KEY
+
+# 5. Run deployment
 chmod +x deployment-scripts/master-deploy.sh
 ./deployment-scripts/master-deploy.sh
-
-# The script will automatically:
-# 1. Create .env.production from template
-# 2. Offer to open nano for configuration
-# 3. Validate your configuration
-# 4. Deploy all services
 ```
 
+## 📋 Configuration Guide
+
+### 🔍 Finding Your VM IP Address
+
+```bash
+# Method 1: External IP (for MEDUSA_ADMIN_BACKEND_URL)
+curl ifconfig.me
+
+# Method 2: Check Azure Portal
+# Go to Azure Portal > Virtual Machines > Your VM > Overview > Public IP
+
+# Method 3: Internal IP (if needed)
+ip addr show | grep 'inet ' | grep -v 127.0.0.1
+```
+
+### 🔐 Generating Security Secrets
+
+```bash
+# Generate all secrets at once:
+echo "JWT_SECRET=$(openssl rand -base64 32)"
+echo "SESSION_AND_COOKIE_SECRET=$(openssl rand -base64 16)"
+echo "MEILI_MASTER_KEY=$(openssl rand -hex 16)"
+
+# Important: Use the SAME value for both SESSION_SECRET and COOKIE_SECRET
+```
+
+### 🗄️ Azure Storage Configuration
+
+```bash
+# Find your Azure Storage Account Key:
+# 1. Go to Azure Portal
+# 2. Navigate to: Storage Accounts > [your-storage-account] > Access keys
+# 3. Copy either key1 or key2
+
+# Your storage account details:
+AZURE_STORAGE_ACCOUNT_NAME=sttechdukaanprod
+AZURE_STORAGE_ACCOUNT_KEY=[key-from-azure-portal]
+AZURE_STORAGE_CONTAINER_NAME=medusa-uploads
+```
+
+### 🗃️ Database Configuration
+
+```bash
+# Azure PostgreSQL Flexible Server format:
+DATABASE_URL=postgres://[username]:[password]@[server-name].postgres.database.azure.com:5432/[database-name]?ssl=true
+
+# Example:
+DATABASE_URL=postgres://techdukaan:MyPassword123@psql-techdukaan-prod.postgres.database.azure.com:5432/postgres?ssl=true
+```
+
+### ✅ Configuration Checklist
+
+Before running deployment, ensure you have:
+- [ ] Replaced USERNAME:PASSWORD in DATABASE_URL
+- [ ] Generated and set JWT_SECRET (32+ characters)
+- [ ] Generated SESSION_SECRET and COOKIE_SECRET (same value)
+- [ ] Generated MEILI_MASTER_KEY
+- [ ] Set YOUR_VM_IP to actual external IP
+- [ ] Added Azure storage account key
+- [ ] Set admin email and password
+
 ### Option 2: Manual Step-by-Step
+
 Choose your deployment scenario below for detailed instructions.
 
 ## 🎯 Deployment Scenarios
@@ -78,6 +153,7 @@ Choose your deployment scenario below for detailed instructions.
 ```
 
 **Environment Configuration**:
+
 ```bash
 # The deployment script will auto-create .env.production from template
 # You'll be prompted to edit it with your actual values:
@@ -122,6 +198,7 @@ nano .env.production
 ```
 
 **Environment Configuration**:
+
 ```bash
 # .env.production for Azure PostgreSQL
 DATABASE_URL=postgresql://medusa@your-server:password@your-server.postgres.database.azure.com:5432/medusa_production?sslmode=require
@@ -184,7 +261,7 @@ npm run dev
 ### Docker Compose Files
 
 - `docker-compose.yml` - Development environment (not included in current setup)
-- `docker-compose.production.yml` - Production deployment with: 
+- `docker-compose.production.yml` - Production deployment with:
   - **medusa-server**: Main Medusa backend + admin interface
   - **redis**: Caching and session storage
   - **meilisearch**: Product search engine
@@ -192,16 +269,17 @@ npm run dev
 
 ### Service Ports
 
-| Service | Port | Description | Access |
-|---------|------|-------------|---------|
-| Medusa Server + Admin | 9000 | Main API + Admin Dashboard | External |
-| Redis | 6379 | Cache (internal) | Internal only |
-| Meilisearch | 7700 | Search engine (internal) | Internal only |
-| PostgreSQL | 5432 | Database (Azure External) | External |
+| Service               | Port | Description                | Access        |
+| --------------------- | ---- | -------------------------- | ------------- |
+| Medusa Server + Admin | 9000 | Main API + Admin Dashboard | External      |
+| Redis                 | 6379 | Cache (internal)           | Internal only |
+| Meilisearch           | 7700 | Search engine (internal)   | Internal only |
+| PostgreSQL            | 5432 | Database (Azure External)  | External      |
 
 ### Environment Variables
 
 **Required Variables**:
+
 ```bash
 # Database (Azure PostgreSQL)
 DATABASE_URL=postgresql://user:password@server.postgres.database.azure.com:5432/database?ssl=true
@@ -224,6 +302,7 @@ MEILI_MASTER_KEY=your_meilisearch_key
 ```
 
 **Optional Variables**:
+
 ```bash
 # Environment
 NODE_ENV=production
@@ -244,6 +323,7 @@ AZURE_STORAGE_CONTAINER_NAME=medusa-uploads
 ## 🏥 Health Checks & Verification
 
 ### Service Health
+
 ```bash
 # Check all services status
 docker compose -f docker-compose.production.yml ps
@@ -260,6 +340,7 @@ curl http://localhost:7700/health
 ```
 
 ### Database Verification
+
 ```bash
 # Check database connection
 docker compose -f docker-compose.production.yml exec medusa-server npx medusa db:status
@@ -269,6 +350,7 @@ docker compose -f docker-compose.production.yml exec medusa-server npx medusa mi
 ```
 
 ### Admin Access
+
 ```bash
 # Reset admin password
 docker compose -f docker-compose.production.yml exec medusa-server npx medusa user --email admin@techdukaan.com --password new_password
@@ -282,7 +364,9 @@ docker compose -f docker-compose.production.yml exec medusa-server npx medusa us
 ### Common Issues
 
 #### Docker Compose V1 vs V2
+
 **Problem**: `docker-compose command not found`
+
 ```bash
 # Solution: Install Docker Compose V2
 sudo apt install docker-compose-plugin -y
@@ -293,7 +377,9 @@ docker-compose up -d  # ❌ Legacy
 ```
 
 #### Migration Errors
+
 **Problem**: `Missing script: migration:run`
+
 ```bash
 # Solution: Use Medusa CLI directly
 docker compose exec medusa-server npx medusa migrations run  # ✅ Correct
@@ -301,7 +387,9 @@ docker compose exec medusa-server npm run migration:run     # ❌ Incorrect
 ```
 
 #### Database Connection Issues
+
 **Problem**: `Connection refused to PostgreSQL`
+
 ```bash
 # Check database status
 docker compose logs postgres
@@ -314,7 +402,9 @@ docker compose exec medusa-server npx medusa db:status
 ```
 
 #### Port Conflicts
+
 **Problem**: `Port already in use`
+
 ```bash
 # Find processes using ports
 sudo netstat -tulpn | grep :9000
@@ -326,6 +416,7 @@ sudo kill -9 $(sudo lsof -t -i:9000)
 ### Advanced Troubleshooting
 
 #### Container Logs
+
 ```bash
 # View all logs
 docker compose -f docker-compose.production.yml logs
@@ -338,6 +429,7 @@ docker compose -f docker-compose.production.yml logs --since 10m
 ```
 
 #### Performance Issues
+
 ```bash
 # Check resource usage
 docker stats
@@ -354,18 +446,21 @@ docker compose -f docker-compose.production.yml exec postgres psql -U medusa -d 
 ### Production Hardening
 
 1. **Change Default Passwords**
+
    ```bash
    # Generate secure passwords
    openssl rand -base64 32
    ```
 
 2. **Enable SSL/TLS**
+
    ```bash
    # Add SSL certificates to nginx proxy
    # Update environment variables for HTTPS
    ```
 
 3. **Network Security**
+
    ```bash
    # Configure firewall
    sudo ufw allow 22,80,443/tcp
@@ -381,6 +476,7 @@ docker compose -f docker-compose.production.yml exec postgres psql -U medusa -d 
 ### Environment Secrets
 
 **Never commit these to version control**:
+
 - Database passwords
 - Session secrets
 - API keys
@@ -391,6 +487,7 @@ Use environment variables or secret management systems.
 ## 🚀 Production Deployment Checklist
 
 ### Current Production Status ✅
+
 - [x] Server meets minimum requirements (Ubuntu 22.04+)
 - [x] Docker Compose V2 installed and tested
 - [x] Azure PostgreSQL database configured and accessible
@@ -402,8 +499,9 @@ Use environment variables or secret management systems.
 - [x] Docker Compose V2 syntax implemented
 
 ### For New Deployments
+
 - [ ] Server meets minimum requirements
-- [ ] Docker Compose V2 installed  
+- [ ] Docker Compose V2 installed
 - [ ] Environment variables configured (.env.production)
 - [ ] Database accessible (Azure PostgreSQL)
 - [ ] Firewall rules configured (ports 22, 9000)
@@ -417,6 +515,7 @@ Use environment variables or secret management systems.
 ## 📊 Monitoring & Maintenance
 
 ### Log Management
+
 ```bash
 # Rotate logs to prevent disk space issues
 docker system prune -f
@@ -426,6 +525,7 @@ docker system prune -f
 ```
 
 ### Regular Maintenance
+
 ```bash
 # Update container images
 docker compose -f docker-compose.production.yml pull
@@ -476,7 +576,7 @@ If you encounter issues:
 
 **Built with ❤️ for the TechDukaan community**
 
-This starter is compatible with versions >= 2 of `@medusajs/medusa`. 
+This starter is compatible with versions >= 2 of `@medusajs/medusa`.
 
 ## Getting Started
 
