@@ -5,11 +5,13 @@ This guide walks you through setting up `api.techdukaan.tech` as your backend AP
 ## 🎯 Overview
 
 **Before Setup:**
+
 - Frontend: https://techdukaan.tech (Vercel)
 - Backend: Direct IP access on port 9000
 - MeiliSearch: Direct IP access on port 7700
 
 **After Setup:**
+
 - Frontend: https://techdukaan.tech (Vercel)
 - Backend API: https://api.techdukaan.tech (Nginx → Medusa:9000)
 - Search API: https://api.techdukaan.tech/search (Nginx → MeiliSearch:7700)
@@ -28,6 +30,7 @@ This guide walks you through setting up `api.techdukaan.tech` as your backend AP
 1. **Log into your domain registrar** (GoDaddy, Namecheap, etc.)
 
 2. **Add A Record for API subdomain:**
+
    ```
    Type: A
    Name: api
@@ -43,11 +46,13 @@ This guide walks you through setting up `api.techdukaan.tech` as your backend AP
 ### Step 2: Deploy Nginx Reverse Proxy
 
 1. **SSH into your Azure VM:**
+
    ```bash
    ssh azureuser@[YOUR_VM_IP]
    ```
 
 2. **Run the Nginx configuration script:**
+
    ```bash
    cd /path/to/TechDukaan/medusa-backend
    sudo chmod +x deployment-scripts/configure-nginx-reverse-proxy.sh
@@ -62,11 +67,13 @@ This guide walks you through setting up `api.techdukaan.tech` as your backend AP
 ### Step 3: Obtain SSL Certificate
 
 1. **Get Let's Encrypt certificate:**
+
    ```bash
    sudo certbot --nginx -d api.techdukaan.tech
    ```
 
 2. **Follow the prompts:**
+
    - Enter your email address
    - Accept terms of service (Y)
    - Choose to share email with EFF (optional)
@@ -80,6 +87,7 @@ This guide walks you through setting up `api.techdukaan.tech` as your backend AP
 ### Step 4: Update Backend Configuration
 
 1. **Update your .env.production file** with the new backend URL:
+
    ```bash
    MEDUSA_ADMIN_BACKEND_URL=https://api.techdukaan.tech
    ```
@@ -94,11 +102,13 @@ This guide walks you through setting up `api.techdukaan.tech` as your backend AP
 ### Step 5: Test the Setup
 
 1. **Test Medusa API:**
+
    ```bash
    curl https://api.techdukaan.tech/store/products
    ```
 
 2. **Test MeiliSearch:**
+
    ```bash
    curl https://api.techdukaan.tech/search/health
    ```
@@ -111,6 +121,7 @@ This guide walks you through setting up `api.techdukaan.tech` as your backend AP
 ### Step 6: Deploy Frontend Changes
 
 1. **Your frontend .env.production is already updated** with:
+
    ```bash
    NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.techdukaan.tech
    NEXT_PUBLIC_MEILI_URL=https://api.techdukaan.tech/search
@@ -147,6 +158,7 @@ https://api.techdukaan.tech/health     → Nginx health check
 ## 🛠 Troubleshooting
 
 ### DNS Issues
+
 ```bash
 # Check if DNS is propagating
 dig api.techdukaan.tech
@@ -156,6 +168,7 @@ nslookup api.techdukaan.tech 8.8.8.8
 ```
 
 ### SSL Certificate Issues
+
 ```bash
 # Check certificate status
 sudo certbot certificates
@@ -165,6 +178,7 @@ sudo certbot renew --dry-run
 ```
 
 ### Nginx Issues
+
 ```bash
 # Check Nginx status
 sudo systemctl status nginx
@@ -177,6 +191,7 @@ sudo nginx -t
 ```
 
 ### Backend Connection Issues
+
 ```bash
 # Check if services are running
 docker ps

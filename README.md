@@ -46,12 +46,14 @@ This ensures smooth deployment without mid-process Azure configuration failures.
 Your Azure VM needs specific ports open for TechDukaan services to be accessible.
 
 **Required Ports:**
+
 - **Port 22**: SSH access (usually already configured)
 - **Port 9000**: Medusa API + Admin Interface (REQUIRED)
 - **Port 7700**: MeiliSearch (optional, for debugging)
 - **Port 6379**: Redis (optional, for debugging)
 
 **Azure Portal Configuration:**
+
 1. Go to **Azure Portal**
 2. Navigate to: **Virtual Machines** > **[your-vm-name]**
 3. Go to **Settings** > **Networking**
@@ -59,9 +61,10 @@ Your Azure VM needs specific ports open for TechDukaan services to be accessible
 5. Add each required port:
 
    **For Port 9000 (Medusa - REQUIRED):**
+
    - **Source**: Any
-   - **Source port ranges**: *
-   - **Destination**: Any  
+   - **Source port ranges**: \*
+   - **Destination**: Any
    - **Destination port ranges**: 9000
    - **Protocol**: TCP
    - **Action**: Allow
@@ -69,11 +72,13 @@ Your Azure VM needs specific ports open for TechDukaan services to be accessible
    - **Name**: `Allow-Medusa-9000`
 
    **For Port 7700 (MeiliSearch - Optional):**
+
    - **Destination port ranges**: 7700
    - **Name**: `Allow-MeiliSearch-7700`
    - **Priority**: 1010
 
    **For Port 6379 (Redis - Optional):**
+
    - **Destination port ranges**: 6379
    - **Name**: `Allow-Redis-6379`
    - **Priority**: 1020
@@ -81,6 +86,7 @@ Your Azure VM needs specific ports open for TechDukaan services to be accessible
 6. Click **Add** for each rule
 
 **Alternative: Azure CLI**
+
 ```bash
 # Get your resource group and VM name
 az vm list --output table
@@ -91,13 +97,14 @@ az vm open-port --resource-group [your-rg] --name [your-vm] --port 9000 --priori
 # Add port 7700 (optional)
 az vm open-port --resource-group [your-rg] --name [your-vm] --port 7700 --priority 1010
 
-# Add port 6379 (optional)  
+# Add port 6379 (optional)
 az vm open-port --resource-group [your-rg] --name [your-vm] --port 6379 --priority 1020
 ```
 
 ### Step 2: Configure Azure PostgreSQL Firewall
 
 **Get Your VM's External IP:**
+
 ```bash
 # SSH into your VM and run:
 curl ifconfig.me
@@ -107,6 +114,7 @@ curl ifconfig.me
 **Add VM IP to PostgreSQL Firewall:**
 
 **Option 1: Azure Portal (Recommended)**
+
 1. Go to **Azure Portal**
 2. Navigate to: **Azure Database for PostgreSQL flexible servers**
 3. Select your database: `psql-techdukaan-prod`
@@ -119,6 +127,7 @@ curl ifconfig.me
 7. Click **Save**
 
 **Option 2: Azure CLI**
+
 ```bash
 # Add firewall rule for your VM
 az postgres flexible-server firewall-rule create \
@@ -134,6 +143,7 @@ az postgres flexible-server firewall-rule create \
 Ensure your Azure Storage account is accessible and you have the access key.
 
 **Get Storage Account Key:**
+
 1. Go to **Azure Portal**
 2. Navigate to: **Storage Accounts** > **sttechdukaanprod**
 3. Go to **Security + networking** > **Access keys**
@@ -142,6 +152,7 @@ Ensure your Azure Storage account is accessible and you have the access key.
 ### Step 4: Test Azure Connectivity
 
 **Test VM Port Access:**
+
 ```bash
 # From another machine, test if port 9000 is accessible
 # Replace [your-vm-ip] with actual VM IP
@@ -151,6 +162,7 @@ telnet [your-vm-ip] 9000
 ```
 
 **Test PostgreSQL Connection:**
+
 ```bash
 # SSH into your VM and test database connection
 psql "postgres://[username]:[password]@psql-techdukaan-prod.postgres.database.azure.com:5432/postgres?sslmode=require"
@@ -164,13 +176,116 @@ psql "postgres://[username]:[password]@psql-techdukaan-prod.postgres.database.az
 Before proceeding to deployment, ensure:
 
 - [ ] VM inbound rule for port 9000 is configured and active
-- [ ] VM inbound rule for port 22 (SSH) is working  
+- [ ] VM inbound rule for port 22 (SSH) is working
 - [ ] VM external IP added to PostgreSQL firewall rules
 - [ ] PostgreSQL connection test successful from VM
 - [ ] Azure Storage account access key obtained
 - [ ] VM can reach external internet (curl ifconfig.me works)
 
 **If any test fails, fix the Azure configuration before proceeding!**
+
+## 🌐 **SSL/Domain Configuration (Recommended)**
+
+**Optional but highly recommended for production deployments.**
+
+Set up professional HTTPS API endpoints like `https://api.techdukaan.tech` instead of using direct IP access.
+
+### Step 1: Configure DNS (One-time Setup)
+
+**Add A Record for API subdomain:**
+
+1. **Log into your domain registrar** (GoDaddy, Namecheap, etc.)
+2. **Add DNS A Record:**
+   ```
+   Type: A
+   Name: api
+   Value: [Your Azure VM Public IP]
+   TTL: 300 (5 minutes)
+   ```
+3. **Verify DNS propagation** (5-15 minutes):
+   ```bash
+   nslookup api.techdukaan.tech
+   # Should return your VM IP address
+   ```
+
+### Step 2: Configure Additional Azure Ports
+
+**For SSL certificates, you need ports 80 and 443 open:**
+
+**Azure Portal Method:**
+
+1. Go to **Azure Portal** > **Virtual Machines** > **[your-vm]** > **Networking**
+2. **Add these inbound port rules:**
+
+   **Port 80 (HTTP - for SSL validation):**
+
+   - **Destination port ranges**: 80
+   - **Protocol**: TCP
+   - **Action**: Allow
+   - **Priority**: 1030
+   - **Name**: `Allow-HTTP-80`
+
+   **Port 443 (HTTPS - for secure traffic):**
+
+   - **Destination port ranges**: 443
+   - **Protocol**: TCP
+   - **Action**: Allow
+   - **Priority**: 1040
+   - **Name**: `Allow-HTTPS-443`
+
+**Azure CLI Method:**
+
+```bash
+# Add port 80 for SSL validation
+az vm open-port --resource-group [your-rg] --name [your-vm] --port 80 --priority 1030
+
+# Add port 443 for HTTPS traffic
+az vm open-port --resource-group [your-rg] --name [your-vm] --port 443 --priority 1040
+```
+
+### Step 3: Automated SSL Setup
+
+**Use our automated script for one-command SSL configuration:**
+
+```bash
+# After completing Steps 1-2 above, run:
+sudo ./deployment-scripts/04-configure-ssl-domain.sh api.techdukaan.tech
+```
+
+**Manual setup** (if you prefer step-by-step control):
+
+```bash
+# Configure Nginx reverse proxy
+sudo ./deployment-scripts/configure-nginx-reverse-proxy.sh
+
+# Get SSL certificate
+sudo certbot --nginx -d api.techdukaan.tech
+```
+
+### Step 4: Verify HTTPS Endpoints
+
+After SSL setup, test your new endpoints:
+
+```bash
+# Test Medusa API
+curl -I https://api.techdukaan.tech
+
+# Test MeiliSearch
+curl -I https://api.techdukaan.tech/search/health
+
+# Test health check
+curl -I https://api.techdukaan.tech/health
+```
+
+### ✅ SSL/Domain Benefits
+
+- ✅ **Professional URLs**: `https://api.techdukaan.tech` instead of `http://ip:9000`
+- ✅ **SSL Security**: All API traffic encrypted
+- ✅ **CORS Compliance**: Browsers trust HTTPS endpoints
+- ✅ **SEO Friendly**: Search engines prefer HTTPS
+- ✅ **Production Ready**: Matches industry standards
+
+**📚 Detailed Guide**: See [API_SUBDOMAIN_SETUP_GUIDE.md](./API_SUBDOMAIN_SETUP_GUIDE.md) for comprehensive instructions.
 
 ## ⚡ Quick Start
 
@@ -217,6 +332,7 @@ sudo ./deployment-scripts/configure-nginx-reverse-proxy.sh
 ### 🚀 Expected Results
 
 After successful deployment:
+
 - ✅ **API Health Check**: `curl http://[your-vm-ip]:9000/health` returns `{"status":"ok"}`
 - ✅ **Admin Interface**: Accessible at `http://[your-vm-ip]:9000/app`
 - ✅ **All Services**: `docker ps` shows 3 running containers
@@ -244,6 +360,7 @@ az vm list-ip-addresses --resource-group [your-rg] --name [your-vm]
 ### 🔧 Add IP to Azure PostgreSQL Firewall
 
 **Option 1: Azure Portal (Recommended)**
+
 1. Go to **Azure Portal**
 2. Navigate to: **Azure Database for PostgreSQL flexible servers**
 3. Select your database: `psql-techdukaan-prod`
@@ -256,6 +373,7 @@ az vm list-ip-addresses --resource-group [your-rg] --name [your-vm]
 7. Click **Save**
 
 **Option 2: Azure CLI**
+
 ```bash
 # Add firewall rule for your VM
 az postgres flexible-server firewall-rule create \
