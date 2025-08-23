@@ -252,6 +252,13 @@ az vm open-port --resource-group [your-rg] --name [your-vm] --port 443 --priorit
 sudo ./deployment-scripts/04-configure-ssl-domain.sh api.techdukaan.tech
 ```
 
+**If MeiliSearch dashboard shows white screen, fix static assets:**
+
+```bash
+# Run this fix if /search shows blank page
+sudo ./deployment-scripts/fix-meilisearch-dashboard.sh api.techdukaan.tech
+```
+
 **Manual setup** (if you prefer step-by-step control):
 
 ```bash
@@ -286,6 +293,38 @@ curl -I https://api.techdukaan.tech/health
 - ✅ **Production Ready**: Matches industry standards
 
 **📚 Detailed Guide**: See [API_SUBDOMAIN_SETUP_GUIDE.md](./API_SUBDOMAIN_SETUP_GUIDE.md) for comprehensive instructions.
+
+### 🛠️ Troubleshooting SSL/Domain Issues
+
+**Common Issue: MeiliSearch Dashboard Shows White Screen**
+
+If `https://api.techdukaan.tech/search` loads with title but shows blank page:
+
+```bash
+# Fix static assets routing issue
+sudo ./deployment-scripts/fix-meilisearch-dashboard.sh api.techdukaan.tech
+
+# Verify fix worked
+curl -I https://api.techdukaan.tech/static/js/  # Should return 200, not 404
+```
+
+**Other Common Issues:**
+
+```bash
+# DNS not resolving
+nslookup api.techdukaan.tech  # Should return your VM IP
+
+# Ports not accessible
+telnet api.techdukaan.tech 80   # Should connect
+telnet api.techdukaan.tech 443  # Should connect
+
+# Nginx configuration issues
+sudo nginx -t                   # Should show "successful"
+sudo systemctl status nginx     # Should show "active (running)"
+
+# SSL certificate issues
+sudo certbot certificates       # Should show valid cert for api.techdukaan.tech
+```
 
 ## ⚡ Quick Start
 
