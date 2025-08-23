@@ -11,8 +11,37 @@ readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly LOG_FILE="$HOME/deployment.log"
 readonly LOCKFILE="/tmp/medusa-deploy.lock"
 
-# Source utilities
-source "$SCRIPT_DIR/utils/deployment-utils.sh"
+# Simple logging function
+log() {
+    local level="$1"
+    shift
+    local message="$*"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    case "$level" in
+        "INFO")
+            echo -e "\033[0;34m[INFO]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        "SUCCESS")
+            echo -e "\033[0;32m[SUCCESS]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        "WARN"|"WARNING")
+            echo -e "\033[1;33m[WARN]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        "ERROR")
+            echo -e "\033[0;31m[ERROR]\033[0m $message" | tee -a ~/deployment.log
+            ;;
+        *)
+            echo "[$timestamp] $level $message" | tee -a ~/deployment.log
+            ;;
+    esac
+}
+
+# Source utilities if available (with fallback)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/utils/deployment-utils.sh" ]]; then
+    source "$SCRIPT_DIR/utils/deployment-utils.sh"
+fi
 
 # Script metadata
 readonly SCRIPT_VERSION="2.0.0"
