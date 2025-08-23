@@ -17,42 +17,329 @@ A production-ready e-commerce platform built with Medusa v2.8.8, featuring autom
 ## 📋 Prerequisites
 
 ### System Requirements
+
 - **OS**: Ubuntu 22.04 LTS or newer
 - **RAM**: Minimum 4GB (8GB recommended for production)
 - **Storage**: 20GB free space
 - **Network**: Internet access for package installation
 
 ### Required Software
+
 - **Docker Engine**: Latest version with Compose V2 plugin
 - **Git**: For repository cloning
 - **curl**: For health checks and downloads
 
 ### Access Requirements
+
 - SSH access to deployment server
 - Azure PostgreSQL credentials (for existing database scenarios)
 - GitHub repository access
 
+## 🔧 **Azure Platform Prerequisites**
+
+**⚠️ CRITICAL: Complete ALL Azure setup steps BEFORE cloning the repository!**
+
+This ensures smooth deployment without mid-process Azure configuration failures.
+
+### Step 1: Configure VM Inbound Port Rules
+
+Your Azure VM needs specific ports open for TechDukaan services to be accessible.
+
+**Required Ports:**
+- **Port 22**: SSH access (usually already configured)
+- **Port 9000**: Medusa API + Admin Interface (REQUIRED)
+- **Port 7700**: MeiliSearch (optional, for debugging)
+- **Port 6379**: Redis (optional, for debugging)
+
+**Azure Portal Configuration:**
+1. Go to **Azure Portal**
+2. Navigate to: **Virtual Machines** > **[your-vm-name]**
+3. Go to **Settings** > **Networking**
+4. Click **Add inbound port rule**
+5. Add each required port:
+
+   **For Port 9000 (Medusa - REQUIRED):**
+   - **Source**: Any
+   - **Source port ranges**: *
+   - **Destination**: Any  
+   - **Destination port ranges**: 9000
+   - **Protocol**: TCP
+   - **Action**: Allow
+   - **Priority**: 1000
+   - **Name**: `Allow-Medusa-9000`
+
+   **For Port 7700 (MeiliSearch - Optional):**
+   - **Destination port ranges**: 7700
+   - **Name**: `Allow-MeiliSearch-7700`
+   - **Priority**: 1010
+
+   **For Port 6379 (Redis - Optional):**
+   - **Destination port ranges**: 6379
+   - **Name**: `Allow-Redis-6379`
+   - **Priority**: 1020
+
+6. Click **Add** for each rule
+
+**Alternative: Azure CLI**
+```bash
+# Get your resource group and VM name
+az vm list --output table
+
+# Add port 9000 (required)
+az vm open-port --resource-group [your-rg] --name [your-vm] --port 9000 --priority 1000
+
+# Add port 7700 (optional)
+az vm open-port --resource-group [your-rg] --name [your-vm] --port 7700 --priority 1010
+
+# Add port 6379 (optional)  
+az vm open-port --resource-group [your-rg] --name [your-vm] --port 6379 --priority 1020
+```
+
+### Step 2: Configure Azure PostgreSQL Firewall
+
+**Get Your VM's External IP:**
+```bash
+# SSH into your VM and run:
+curl ifconfig.me
+# Note this IP address - you'll need it for firewall rules
+```
+
+**Add VM IP to PostgreSQL Firewall:**
+
+**Option 1: Azure Portal (Recommended)**
+1. Go to **Azure Portal**
+2. Navigate to: **Azure Database for PostgreSQL flexible servers**
+3. Select your database: `psql-techdukaan-prod`
+4. Go to **Settings** > **Networking**
+5. Under **Firewall rules**, click **+ Add current client IP address**
+6. Or manually add rule:
+   - **Rule name**: `VM-TechDukaan-Access`
+   - **Start IP**: `[your-vm-ip]` (e.g., 20.198.176.252)
+   - **End IP**: `[your-vm-ip]` (same as start IP)
+7. Click **Save**
+
+**Option 2: Azure CLI**
+```bash
+# Add firewall rule for your VM
+az postgres flexible-server firewall-rule create \
+  --resource-group [your-resource-group] \
+  --name psql-techdukaan-prod \
+  --rule-name VM-TechDukaan-Access \
+  --start-ip-address [your-vm-ip] \
+  --end-ip-address [your-vm-ip]
+```
+
+### Step 3: Verify Azure Storage Account Access
+
+Ensure your Azure Storage account is accessible and you have the access key.
+
+**Get Storage Account Key:**
+1. Go to **Azure Portal**
+2. Navigate to: **Storage Accounts** > **sttechdukaanprod**
+3. Go to **Security + networking** > **Access keys**
+4. Copy either **key1** or **key2** (you'll need this for .env.production)
+
+### Step 4: Test Azure Connectivity
+
+**Test VM Port Access:**
+```bash
+# From another machine, test if port 9000 is accessible
+# Replace [your-vm-ip] with actual VM IP
+telnet [your-vm-ip] 9000
+
+# Should connect (even if it immediately closes, connection success means port is open)
+```
+
+**Test PostgreSQL Connection:**
+```bash
+# SSH into your VM and test database connection
+psql "postgres://[username]:[password]@psql-techdukaan-prod.postgres.database.azure.com:5432/postgres?sslmode=require"
+
+# Should connect successfully without errors
+# Type \q to exit
+```
+
+### ✅ Azure Prerequisites Checklist
+
+Before proceeding to deployment, ensure:
+
+- [ ] VM inbound rule for port 9000 is configured and active
+- [ ] VM inbound rule for port 22 (SSH) is working  
+- [ ] VM external IP added to PostgreSQL firewall rules
+- [ ] PostgreSQL connection test successful from VM
+- [ ] Azure Storage account access key obtained
+- [ ] VM can reach external internet (curl ifconfig.me works)
+
+**If any test fails, fix the Azure configuration before proceeding!**
+
 ## ⚡ Quick Start
 
-### Option 1: Automated Deployment (Recommended)
+**Prerequisites:** Complete the "Azure Platform Prerequisites" section above first!
+
+### Automated Deployment (Recommended)
 
 ```bash
-# Clone the repository
+# 1. Clone the repository (Azure setup should be done first!)
 git clone https://github.com/AryanXPatel/TechDukaan-Medusa.git
 cd TechDukaan-Medusa
 
-# Run master deployment script
+# 2. Set up environment configuration
+cp .env.production.template .env.production
+
+# 3. Edit configuration with your actual values
+nano .env.production
+# Replace ALL placeholder values:
+# - USERNAME:PASSWORD in DATABASE_URL
+# - All GENERATE_* secrets (use commands below)
+# - YOUR_VM_IP with actual IP address (from: curl ifconfig.me)
+# - Azure storage keys (from Azure Portal)
+
+# 4. Generate required secrets:
+openssl rand -base64 32    # For JWT_SECRET
+openssl rand -base64 16    # For SESSION_SECRET and COOKIE_SECRET (use SAME value!)
+openssl rand -hex 16       # For MEILI_MASTER_KEY
+
+# 5. Run deployment (will validate configuration and deploy)
 chmod +x deployment-scripts/master-deploy.sh
 ./deployment-scripts/master-deploy.sh
 
-# The script will automatically:
-# 1. Create .env.production from template
-# 2. Offer to open nano for configuration
-# 3. Validate your configuration
-# 4. Deploy all services
+# 6. Access your deployment:
+# API Health: http://[your-vm-ip]:9000/health
+# Admin Interface: http://[your-vm-ip]:9000/app
 ```
 
+### 🚀 Expected Results
+
+After successful deployment:
+- ✅ **API Health Check**: `curl http://[your-vm-ip]:9000/health` returns `{"status":"ok"}`
+- ✅ **Admin Interface**: Accessible at `http://[your-vm-ip]:9000/app`
+- ✅ **All Services**: `docker ps` shows 3 running containers
+- ✅ **Database Connected**: Migrations completed successfully
+
+## � **CRITICAL: Azure PostgreSQL Firewall Setup**
+
+**⚠️ IMPORTANT: Do this BEFORE running the deployment script!**
+
+Your Azure PostgreSQL database has firewall rules that block connections by default. You MUST add your VM's IP address to the firewall rules, or the deployment will fail with connection errors.
+
+### 📍 Get Your VM's External IP Address
+
+```bash
+# Method 1: Get external IP from your VM
+curl ifconfig.me
+
+# Method 2: Check Azure Portal
+# Go to: Azure Portal > Virtual Machines > [your-vm] > Overview > Public IP address
+
+# Method 3: From Azure CLI (if installed)
+az vm list-ip-addresses --resource-group [your-rg] --name [your-vm]
+```
+
+### 🔧 Add IP to Azure PostgreSQL Firewall
+
+**Option 1: Azure Portal (Recommended)**
+1. Go to **Azure Portal**
+2. Navigate to: **Azure Database for PostgreSQL flexible servers**
+3. Select your database: `psql-techdukaan-prod`
+4. Go to **Settings > Networking**
+5. Under **Firewall rules**, click **+ Add current client IP address**
+6. Or manually add rule:
+   - **Rule name**: `VM-TechDukaan-Access`
+   - **Start IP**: `[your-vm-ip]` (e.g., 20.198.176.252)
+   - **End IP**: `[your-vm-ip]` (same as start IP)
+7. Click **Save**
+
+**Option 2: Azure CLI**
+```bash
+# Add firewall rule for your VM
+az postgres flexible-server firewall-rule create \
+  --resource-group [your-resource-group] \
+  --name psql-techdukaan-prod \
+  --rule-name VM-TechDukaan-Access \
+  --start-ip-address [your-vm-ip] \
+  --end-ip-address [your-vm-ip]
+```
+
+### ✅ Test Database Connection
+
+Before proceeding with deployment, test the database connection:
+
+```bash
+# Test connection using psql (if available)
+psql "postgres://[username]:[password]@psql-techdukaan-prod.postgres.database.azure.com:5432/postgres?sslmode=require"
+
+# Or test with telnet
+telnet psql-techdukaan-prod.postgres.database.azure.com 5432
+```
+
+**If connection fails, double-check your firewall rules and VM IP address!**
+
+---
+
+## �📋 Configuration Guide
+
+### 🔍 Finding Your VM IP Address
+
+```bash
+# Method 1: External IP (for MEDUSA_ADMIN_BACKEND_URL)
+curl ifconfig.me
+
+# Method 2: Check Azure Portal
+# Go to Azure Portal > Virtual Machines > Your VM > Overview > Public IP
+
+# Method 3: Internal IP (if needed)
+ip addr show | grep 'inet ' | grep -v 127.0.0.1
+```
+
+### 🔐 Generating Security Secrets
+
+```bash
+# Generate all secrets at once:
+echo "JWT_SECRET=$(openssl rand -base64 32)"
+echo "SESSION_AND_COOKIE_SECRET=$(openssl rand -base64 16)"
+echo "MEILI_MASTER_KEY=$(openssl rand -hex 16)"
+
+# Important: Use the SAME value for both SESSION_SECRET and COOKIE_SECRET
+```
+
+### 🗄️ Azure Storage Configuration
+
+```bash
+# Find your Azure Storage Account Key:
+# 1. Go to Azure Portal
+# 2. Navigate to: Storage Accounts > [your-storage-account] > Access keys
+# 3. Copy either key1 or key2
+
+# Your storage account details:
+AZURE_STORAGE_ACCOUNT_NAME=sttechdukaanprod
+AZURE_STORAGE_ACCOUNT_KEY=[key-from-azure-portal]
+AZURE_STORAGE_CONTAINER_NAME=medusa-uploads
+```
+
+### 🗃️ Database Configuration
+
+```bash
+# Azure PostgreSQL Flexible Server format:
+DATABASE_URL=postgres://[username]:[password]@[server-name].postgres.database.azure.com:5432/[database-name]?ssl=true
+
+# Example:
+DATABASE_URL=postgres://techdukaan:MyPassword123@psql-techdukaan-prod.postgres.database.azure.com:5432/postgres?ssl=true
+```
+
+### ✅ Configuration Checklist
+
+Before running deployment, ensure you have:
+
+- [ ] Replaced USERNAME:PASSWORD in DATABASE_URL
+- [ ] Generated and set JWT_SECRET (32+ characters)
+- [ ] Generated SESSION_SECRET and COOKIE_SECRET (same value)
+- [ ] Generated MEILI_MASTER_KEY
+- [ ] Set YOUR_VM_IP to actual external IP
+- [ ] Added Azure storage account key
+- [ ] Set admin email and password
+
 ### Option 2: Manual Step-by-Step
+
 Choose your deployment scenario below for detailed instructions.
 
 ## 🎯 Deployment Scenarios
@@ -78,6 +365,7 @@ Choose your deployment scenario below for detailed instructions.
 ```
 
 **Environment Configuration**:
+
 ```bash
 # The deployment script will auto-create .env.production from template
 # You'll be prompted to edit it with your actual values:
@@ -122,6 +410,7 @@ nano .env.production
 ```
 
 **Environment Configuration**:
+
 ```bash
 # .env.production for Azure PostgreSQL
 DATABASE_URL=postgresql://medusa@your-server:password@your-server.postgres.database.azure.com:5432/medusa_production?sslmode=require
@@ -184,7 +473,7 @@ npm run dev
 ### Docker Compose Files
 
 - `docker-compose.yml` - Development environment (not included in current setup)
-- `docker-compose.production.yml` - Production deployment with: 
+- `docker-compose.production.yml` - Production deployment with:
   - **medusa-server**: Main Medusa backend + admin interface
   - **redis**: Caching and session storage
   - **meilisearch**: Product search engine
@@ -192,16 +481,17 @@ npm run dev
 
 ### Service Ports
 
-| Service | Port | Description | Access |
-|---------|------|-------------|---------|
-| Medusa Server + Admin | 9000 | Main API + Admin Dashboard | External |
-| Redis | 6379 | Cache (internal) | Internal only |
-| Meilisearch | 7700 | Search engine (internal) | Internal only |
-| PostgreSQL | 5432 | Database (Azure External) | External |
+| Service               | Port | Description                | Access        |
+| --------------------- | ---- | -------------------------- | ------------- |
+| Medusa Server + Admin | 9000 | Main API + Admin Dashboard | External      |
+| Redis                 | 6379 | Cache (internal)           | Internal only |
+| Meilisearch           | 7700 | Search engine (internal)   | Internal only |
+| PostgreSQL            | 5432 | Database (Azure External)  | External      |
 
 ### Environment Variables
 
 **Required Variables**:
+
 ```bash
 # Database (Azure PostgreSQL)
 DATABASE_URL=postgresql://user:password@server.postgres.database.azure.com:5432/database?ssl=true
@@ -224,6 +514,7 @@ MEILI_MASTER_KEY=your_meilisearch_key
 ```
 
 **Optional Variables**:
+
 ```bash
 # Environment
 NODE_ENV=production
@@ -244,6 +535,7 @@ AZURE_STORAGE_CONTAINER_NAME=medusa-uploads
 ## 🏥 Health Checks & Verification
 
 ### Service Health
+
 ```bash
 # Check all services status
 docker compose -f docker-compose.production.yml ps
@@ -260,6 +552,7 @@ curl http://localhost:7700/health
 ```
 
 ### Database Verification
+
 ```bash
 # Check database connection
 docker compose -f docker-compose.production.yml exec medusa-server npx medusa db:status
@@ -269,6 +562,7 @@ docker compose -f docker-compose.production.yml exec medusa-server npx medusa mi
 ```
 
 ### Admin Access
+
 ```bash
 # Reset admin password
 docker compose -f docker-compose.production.yml exec medusa-server npx medusa user --email admin@techdukaan.com --password new_password
@@ -282,7 +576,9 @@ docker compose -f docker-compose.production.yml exec medusa-server npx medusa us
 ### Common Issues
 
 #### Docker Compose V1 vs V2
+
 **Problem**: `docker-compose command not found`
+
 ```bash
 # Solution: Install Docker Compose V2
 sudo apt install docker-compose-plugin -y
@@ -293,7 +589,9 @@ docker-compose up -d  # ❌ Legacy
 ```
 
 #### Migration Errors
+
 **Problem**: `Missing script: migration:run`
+
 ```bash
 # Solution: Use Medusa CLI directly
 docker compose exec medusa-server npx medusa migrations run  # ✅ Correct
@@ -301,20 +599,32 @@ docker compose exec medusa-server npm run migration:run     # ❌ Incorrect
 ```
 
 #### Database Connection Issues
-**Problem**: `Connection refused to PostgreSQL`
+
+**Problem**: `Connection refused to PostgreSQL` or `Connection reset by peer`
+
+**Most Common Cause**: Azure PostgreSQL firewall blocking VM IP
+
 ```bash
-# Check database status
-docker compose logs postgres
+# 1. Check your VM's IP address
+curl ifconfig.me
 
-# Verify connection string
-echo $DATABASE_URL
+# 2. Add this IP to Azure PostgreSQL firewall rules:
+#    Azure Portal > PostgreSQL flexible servers > psql-techdukaan-prod > Networking > Firewall rules
 
-# Test connection
+# 3. Test database connection
+psql "postgres://[username]:[password]@psql-techdukaan-prod.postgres.database.azure.com:5432/postgres?sslmode=require"
+
+# 4. Check container database connectivity
 docker compose exec medusa-server npx medusa db:status
+
+# 5. Verify connection string in container
+docker compose exec medusa-server env | grep DATABASE_URL
 ```
 
 #### Port Conflicts
+
 **Problem**: `Port already in use`
+
 ```bash
 # Find processes using ports
 sudo netstat -tulpn | grep :9000
@@ -326,6 +636,7 @@ sudo kill -9 $(sudo lsof -t -i:9000)
 ### Advanced Troubleshooting
 
 #### Container Logs
+
 ```bash
 # View all logs
 docker compose -f docker-compose.production.yml logs
@@ -338,6 +649,7 @@ docker compose -f docker-compose.production.yml logs --since 10m
 ```
 
 #### Performance Issues
+
 ```bash
 # Check resource usage
 docker stats
@@ -354,18 +666,21 @@ docker compose -f docker-compose.production.yml exec postgres psql -U medusa -d 
 ### Production Hardening
 
 1. **Change Default Passwords**
+
    ```bash
    # Generate secure passwords
    openssl rand -base64 32
    ```
 
 2. **Enable SSL/TLS**
+
    ```bash
    # Add SSL certificates to nginx proxy
    # Update environment variables for HTTPS
    ```
 
 3. **Network Security**
+
    ```bash
    # Configure firewall
    sudo ufw allow 22,80,443/tcp
@@ -381,6 +696,7 @@ docker compose -f docker-compose.production.yml exec postgres psql -U medusa -d 
 ### Environment Secrets
 
 **Never commit these to version control**:
+
 - Database passwords
 - Session secrets
 - API keys
@@ -391,6 +707,7 @@ Use environment variables or secret management systems.
 ## 🚀 Production Deployment Checklist
 
 ### Current Production Status ✅
+
 - [x] Server meets minimum requirements (Ubuntu 22.04+)
 - [x] Docker Compose V2 installed and tested
 - [x] Azure PostgreSQL database configured and accessible
@@ -402,8 +719,9 @@ Use environment variables or secret management systems.
 - [x] Docker Compose V2 syntax implemented
 
 ### For New Deployments
+
 - [ ] Server meets minimum requirements
-- [ ] Docker Compose V2 installed  
+- [ ] Docker Compose V2 installed
 - [ ] Environment variables configured (.env.production)
 - [ ] Database accessible (Azure PostgreSQL)
 - [ ] Firewall rules configured (ports 22, 9000)
@@ -417,6 +735,7 @@ Use environment variables or secret management systems.
 ## 📊 Monitoring & Maintenance
 
 ### Log Management
+
 ```bash
 # Rotate logs to prevent disk space issues
 docker system prune -f
@@ -426,6 +745,7 @@ docker system prune -f
 ```
 
 ### Regular Maintenance
+
 ```bash
 # Update container images
 docker compose -f docker-compose.production.yml pull
@@ -476,7 +796,7 @@ If you encounter issues:
 
 **Built with ❤️ for the TechDukaan community**
 
-This starter is compatible with versions >= 2 of `@medusajs/medusa`. 
+This starter is compatible with versions >= 2 of `@medusajs/medusa`.
 
 ## Getting Started
 
