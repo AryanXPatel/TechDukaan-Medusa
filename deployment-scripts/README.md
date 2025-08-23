@@ -43,6 +43,7 @@ sudo ./deployment-scripts/00-fresh-vm-setup.sh
 ```
 
 This installs:
+
 - Docker Engine and Docker Compose
 - Node.js v20 LTS
 - Essential development tools
@@ -53,21 +54,24 @@ This installs:
 **You must manually configure the environment file:**
 
 1. Copy the template:
+
    ```bash
    cp .env.production.template .env.production
    ```
 
 2. Edit `.env.production` with your actual values:
+
    ```bash
    nano .env.production
    ```
 
 3. Generate secure secrets:
+
    ```bash
    # Generate JWT secret (32 hex chars)
    openssl rand -hex 32
-   
-   # Generate cookie secret (16 hex chars) 
+
+   # Generate cookie secret (16 hex chars)
    openssl rand -hex 16
    ```
 
@@ -91,6 +95,7 @@ Deploy Medusa with admin interface fix:
 ```
 
 This process:
+
 - Validates environment configuration
 - Builds admin interface with proper backend URL
 - Starts all services via Docker Compose
@@ -106,6 +111,7 @@ Run comprehensive testing:
 ```
 
 Tests performed:
+
 - Infrastructure health (containers, ports)
 - API functionality (health, store, admin endpoints)
 - Database connectivity and migrations
@@ -189,16 +195,19 @@ After successful deployment:
 ### Common Issues
 
 **Admin interface login loop:**
+
 - Verify `SESSION_SECRET` matches `COOKIE_SECRET`
 - Check `MEDUSA_ADMIN_BACKEND_URL` is correct
 - Confirm firewall allows port 9000
 
 **Database connection failed:**
+
 - Verify `DATABASE_URL` format and credentials
 - Check Azure PostgreSQL firewall rules
 - Ensure SSL is enabled
 
 **Container startup issues:**
+
 - Check logs: `docker-compose -f docker-compose.production.yml logs`
 - Verify system resources (memory/disk)
 - Check Docker daemon status

@@ -38,7 +38,6 @@ log() {
 }
 
 # Source utilities if available (with fallback)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "$SCRIPT_DIR/utils/deployment-utils.sh" ]]; then
     source "$SCRIPT_DIR/utils/deployment-utils.sh"
 fi
