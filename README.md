@@ -44,6 +44,12 @@ cd TechDukaan-Medusa
 # Run master deployment script
 chmod +x deployment-scripts/master-deploy.sh
 ./deployment-scripts/master-deploy.sh
+
+# The script will automatically:
+# 1. Create .env.production from template
+# 2. Offer to open nano for configuration
+# 3. Validate your configuration
+# 4. Deploy all services
 ```
 
 ### Option 2: Manual Step-by-Step
@@ -73,15 +79,23 @@ Choose your deployment scenario below for detailed instructions.
 
 **Environment Configuration**:
 ```bash
-# .env.production (example configuration)
-# Note: The current setup uses Azure PostgreSQL (no local postgres needed)
+# The deployment script will auto-create .env.production from template
+# You'll be prompted to edit it with your actual values:
+
+# Generate secrets with these commands:
+openssl rand -base64 32    # For JWT_SECRET
+openssl rand -base64 16    # For SESSION_SECRET and COOKIE_SECRET (use same value!)
+openssl rand -hex 16       # For MEILI_MASTER_KEY
+
+# Example .env.production values:
 DATABASE_URL=postgresql://techdukaan:password@psql-techdukaan-prod.postgres.database.azure.com:5432/postgres?ssl=true
 REDIS_URL=redis://redis:6379
-MEDUSA_ADMIN_EMAIL=admin@techdukaan.com
-MEDUSA_ADMIN_PASSWORD=secure_admin_password
-SESSION_SECRET=your_session_secret_here
-JWT_SECRET=your_jwt_secret_here
-COOKIE_SECRET=your_cookie_secret_here
+JWT_SECRET=your_generated_jwt_secret
+SESSION_SECRET=your_generated_session_secret
+COOKIE_SECRET=your_generated_session_secret  # Must match SESSION_SECRET!
+MEDUSA_ADMIN_BACKEND_URL=http://YOUR_VM_IP:9000
+ADMIN_EMAIL=admin@techdukaan.com
+ADMIN_PASSWORD=secure_admin_password
 ```
 
 ### Scenario 2: Fresh VM + Different Azure PostgreSQL Instance

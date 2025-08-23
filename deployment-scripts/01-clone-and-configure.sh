@@ -46,10 +46,37 @@ fi
 
 # Check if .env.production exists
 if [ ! -f ".env.production" ]; then
-    print_error ".env.production file not found"
-    print_info "Please copy .env.production.template to .env.production and configure it"
-    print_info "cp .env.production.template .env.production"
-    exit 1
+    print_warning ".env.production file not found"
+    print_info "Creating .env.production from template..."
+    
+    if [ ! -f ".env.production.template" ]; then
+        print_error ".env.production.template not found"
+        exit 1
+    fi
+    
+    cp .env.production.template .env.production
+    print_success ".env.production created from template"
+    
+    echo ""
+    print_warning "IMPORTANT: You must configure .env.production with your actual values"
+    print_info "The file contains placeholder values that need to be replaced:"
+    print_info "- Database credentials (USERNAME:PASSWORD)"
+    print_info "- Security secrets (generate with openssl rand commands)"
+    print_info "- Azure storage keys"
+    print_info "- Your VM IP address"
+    echo ""
+    
+    read -p "Would you like to edit .env.production in nano now? (Y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        print_info "Opening .env.production in nano..."
+        nano .env.production
+        print_success "Environment file editing completed"
+    else
+        print_warning "You chose to skip editing. Please configure .env.production manually before continuing"
+        print_info "You can edit it later with: nano .env.production"
+    fi
+    echo ""
 fi
 
 print_success ".env.production file found"
@@ -71,6 +98,8 @@ REQUIRED_VARS=(
     "ADMIN_EMAIL"
     "ADMIN_PASSWORD"
     "MEDUSA_ADMIN_BACKEND_URL"
+    "WORKER_MODE"
+    "MEILI_MASTER_KEY"
 )
 
 # Validate required variables are set
@@ -79,7 +108,7 @@ for var in "${REQUIRED_VARS[@]}"; do
     if [ -z "${!var}" ]; then
         print_error "Required variable $var is not set"
         VALIDATION_FAILED=true
-    elif [[ "${!var}" == *"CHANGE_ME"* ]] || [[ "${!var}" == *"YOUR_"* ]]; then
+    elif [[ "${!var}" == *"CHANGE_ME"* ]] || [[ "${!var}" == *"YOUR_"* ]] || [[ "${!var}" == *"GENERATE_"* ]] || [[ "${!var}" == *"USERNAME"* ]] || [[ "${!var}" == *"PASSWORD"* ]]; then
         print_error "Variable $var still contains placeholder value: ${!var}"
         VALIDATION_FAILED=true
     fi
@@ -120,6 +149,14 @@ if [ "$VALIDATION_FAILED" = true ]; then
     echo ""
     print_error "Configuration validation failed"
     print_info "Please fix the issues above in .env.production before continuing"
+    print_info ""
+    print_info "Quick fix commands:"
+    print_info "  Edit file: nano .env.production"
+    print_info "  Generate JWT secret: openssl rand -base64 32"
+    print_info "  Generate session/cookie secret: openssl rand -base64 16"
+    print_info "  Generate MeiliSearch key: openssl rand -hex 16"
+    print_info ""
+    print_info "Make sure SESSION_SECRET and COOKIE_SECRET have the same value!"
     exit 1
 fi
 
@@ -131,8 +168,10 @@ echo ""
 echo "Configuration Summary:"
 echo "====================="
 echo "Node Environment: $NODE_ENV"
+echo "Worker Mode: $WORKER_MODE"
 echo "Admin Email: $ADMIN_EMAIL"
 echo "External Backend URL: $MEDUSA_ADMIN_BACKEND_URL"
 echo "Database Host: $(echo "$DATABASE_URL" | sed 's|.*@||' | sed 's|:.*||')"
+echo "Session/Cookie Secrets: $([ "$SESSION_SECRET" = "$COOKIE_SECRET" ] && echo "✓ Matching" || echo "✗ Not matching")"
 echo ""
 echo "Ready for deployment."
