@@ -203,7 +203,13 @@ openssl rand -hex 16       # For MEILI_MASTER_KEY
 chmod +x deployment-scripts/master-deploy.sh
 ./deployment-scripts/master-deploy.sh
 
-# 6. Access your deployment:
+# 6. (Optional) Setup Professional API Subdomain
+# For api.techdukaan.tech endpoints instead of direct IP access
+sudo chmod +x deployment-scripts/configure-nginx-reverse-proxy.sh
+sudo ./deployment-scripts/configure-nginx-reverse-proxy.sh
+# Then follow: API_SUBDOMAIN_SETUP_GUIDE.md for DNS and SSL
+
+# 7. Access your deployment:
 # API Health: http://[your-vm-ip]:9000/health
 # Admin Interface: http://[your-vm-ip]:9000/app
 ```
