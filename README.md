@@ -118,6 +118,7 @@ DATABASE_URL=postgres://techdukaan:MyPassword123@psql-techdukaan-prod.postgres.d
 ### ✅ Configuration Checklist
 
 Before running deployment, ensure you have:
+
 - [ ] Replaced USERNAME:PASSWORD in DATABASE_URL
 - [ ] Generated and set JWT_SECRET (32+ characters)
 - [ ] Generated SESSION_SECRET and COOKIE_SECRET (same value)

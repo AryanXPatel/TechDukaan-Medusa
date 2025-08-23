@@ -175,13 +175,6 @@ if [[ "$AZURE_STORAGE_ACCOUNT_KEY" == *"YOUR_AZURE_STORAGE_KEY"* ]]; then
     print_info "   💡 Get key from: Azure Portal > Storage Accounts > sttechdukaanprod > Access keys"
     VALIDATION_FAILED=true
 fi
-    VALIDATION_FAILED=true
-fi
-
-if [[ "$AZURE_STORAGE_ACCOUNT_KEY" == *"YOUR_AZURE_STORAGE_KEY"* ]]; then
-    print_error "AZURE_STORAGE_ACCOUNT_KEY still contains placeholder"
-    VALIDATION_FAILED=true
-fi
 
 # Critical validation: SESSION_SECRET must match COOKIE_SECRET
 echo ""
