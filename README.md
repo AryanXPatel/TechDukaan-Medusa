@@ -189,7 +189,8 @@ Before proceeding to deployment, ensure:
 **Optional but highly recommended for production deployments.**
 
 Set up professional HTTPS API endpoints with dedicated subdomains:
-- **Medusa API**: `https://api.techdukaan.tech` 
+
+- **Medusa API**: `https://api.techdukaan.tech`
 - **MeiliSearch**: `https://search.techdukaan.tech`
 
 ### Step 1: Configure DNS (One-time Setup)
@@ -198,17 +199,19 @@ Set up professional HTTPS API endpoints with dedicated subdomains:
 
 1. **Log into your domain registrar** (GoDaddy, Namecheap, etc.)
 2. **Add DNS A Records:**
+
    ```
    Type: A
    Name: api
    Value: [Your Azure VM Public IP]
    TTL: 300 (5 minutes)
-   
-   Type: A  
+
+   Type: A
    Name: search
    Value: [Your Azure VM Public IP]
    TTL: 300 (5 minutes)
    ```
+
 3. **Verify DNS propagation** (5-15 minutes):
    ```bash
    nslookup api.techdukaan.tech
@@ -281,7 +284,7 @@ After SSL setup, test your new dual subdomain endpoints:
 # Test Medusa API
 curl -I https://api.techdukaan.tech
 
-# Test MeiliSearch API  
+# Test MeiliSearch API
 curl -I https://search.techdukaan.tech/health
 
 # Test MeiliSearch Dashboard
@@ -931,6 +934,26 @@ If you encounter issues:
 - **Project Maintainer**: [Aryan Patel](mailto:aryan@techdukaan.com)
 - **Repository**: [github.com/AryanXPatel/TechDukaan-Medusa](https://github.com/AryanXPatel/TechDukaan-Medusa)
 - **Documentation**: [TechDukaan Deployment Guide](https://github.com/AryanXPatel/TechDukaan-Medusa/blob/main/README.md)
+
+## 🚀 Complete Dual Subdomain Setup (ONE COMMAND)
+
+**NEW: Automated zero-confusion setup for production domains**
+
+```bash
+# Run this ONCE to set up everything correctly:
+sudo ./deployment-scripts/setup-complete-dual-subdomain.sh
+```
+
+This replaces multiple manual steps and prevents routing configuration errors.
+
+**Result**: 
+- ✅ `api.techdukaan.tech` → Medusa (correct)
+- ✅ `search.techdukaan.tech` → MeiliSearch (correct)
+- ✅ SSL certificates automatically configured
+- ✅ CORS fixes applied for MeiliSearch dashboard
+- ✅ All routing validated and tested
+
+See `deployment-scripts/COMPLETE_DUAL_SUBDOMAIN_SETUP.md` for full details.
 
 ---
 
