@@ -184,28 +184,36 @@ Before proceeding to deployment, ensure:
 
 **If any test fails, fix the Azure configuration before proceeding!**
 
-## 🌐 **SSL/Domain Configuration (Recommended)**
+## 🌐 **Dual Subdomain SSL/Domain Configuration (Recommended)**
 
 **Optional but highly recommended for production deployments.**
 
-Set up professional HTTPS API endpoints like `https://api.techdukaan.tech` instead of using direct IP access.
+Set up professional HTTPS API endpoints with dedicated subdomains:
+- **Medusa API**: `https://api.techdukaan.tech` 
+- **MeiliSearch**: `https://search.techdukaan.tech`
 
 ### Step 1: Configure DNS (One-time Setup)
 
-**Add A Record for API subdomain:**
+**Add A Records for both API and Search subdomains:**
 
 1. **Log into your domain registrar** (GoDaddy, Namecheap, etc.)
-2. **Add DNS A Record:**
+2. **Add DNS A Records:**
    ```
    Type: A
    Name: api
+   Value: [Your Azure VM Public IP]
+   TTL: 300 (5 minutes)
+   
+   Type: A  
+   Name: search
    Value: [Your Azure VM Public IP]
    TTL: 300 (5 minutes)
    ```
 3. **Verify DNS propagation** (5-15 minutes):
    ```bash
    nslookup api.techdukaan.tech
-   # Should return your VM IP address
+   nslookup search.techdukaan.tech
+   # Both should return your VM IP address
    ```
 
 ### Step 2: Configure Additional Azure Ports
@@ -243,49 +251,57 @@ az vm open-port --resource-group [your-rg] --name [your-vm] --port 80 --priority
 az vm open-port --resource-group [your-rg] --name [your-vm] --port 443 --priority 1040
 ```
 
-### Step 3: Automated SSL Setup
+### Step 3: Automated Dual Subdomain SSL Setup
 
-**Use our automated script for one-command SSL configuration:**
+**Use our automated script for one-command dual subdomain SSL configuration:**
 
 ```bash
 # After completing Steps 1-2 above, run:
-sudo ./deployment-scripts/04-configure-ssl-domain.sh api.techdukaan.tech
+sudo ./deployment-scripts/configure-dual-subdomain-nginx.sh
+
+# Then get SSL certificates for both domains:
+sudo certbot --nginx -d api.techdukaan.tech -d search.techdukaan.tech
 ```
 
 **Manual setup** (if you prefer step-by-step control):
 
 ```bash
-# Configure Nginx reverse proxy
-sudo ./deployment-scripts/configure-nginx-reverse-proxy.sh
+# Configure dual subdomain Nginx setup
+sudo ./deployment-scripts/configure-dual-subdomain-nginx.sh
 
-# Get SSL certificate
-sudo certbot --nginx -d api.techdukaan.tech
+# Get SSL certificates for both domains
+sudo certbot --nginx -d api.techdukaan.tech -d search.techdukaan.tech
 ```
 
 ### Step 4: Verify HTTPS Endpoints
 
-After SSL setup, test your new endpoints:
+After SSL setup, test your new dual subdomain endpoints:
 
 ```bash
 # Test Medusa API
 curl -I https://api.techdukaan.tech
 
-# Test MeiliSearch
-curl -I https://api.techdukaan.tech/search/health
+# Test MeiliSearch API  
+curl -I https://search.techdukaan.tech/health
 
-# Test health check
+# Test MeiliSearch Dashboard
+curl -I https://search.techdukaan.tech
+
+# Test API health check
 curl -I https://api.techdukaan.tech/health
 ```
 
 ### ✅ SSL/Domain Benefits
 
-- ✅ **Professional URLs**: `https://api.techdukaan.tech` instead of `http://ip:9000`
+- ✅ **Professional URLs**: `https://api.techdukaan.tech` and `https://search.techdukaan.tech`
 - ✅ **SSL Security**: All API traffic encrypted
+- ✅ **Service Isolation**: Clean separation between Medusa and MeiliSearch
+- ✅ **No Static Asset Conflicts**: MeiliSearch dashboard works perfectly
 - ✅ **CORS Compliance**: Browsers trust HTTPS endpoints
 - ✅ **SEO Friendly**: Search engines prefer HTTPS
-- ✅ **Production Ready**: Matches industry standards
+- ✅ **Production Ready**: Matches industry standards for microservices
 
-**📚 Detailed Guide**: See [API_SUBDOMAIN_SETUP_GUIDE.md](./API_SUBDOMAIN_SETUP_GUIDE.md) for comprehensive instructions.
+**📚 Detailed Guide**: See [WINDOWS_TO_AZURE_WORKFLOW.md](../WINDOWS_TO_AZURE_WORKFLOW.md) for comprehensive dual subdomain setup instructions.
 
 ## ⚡ Quick Start
 
@@ -318,11 +334,11 @@ openssl rand -hex 16       # For MEILI_MASTER_KEY
 chmod +x deployment-scripts/master-deploy.sh
 ./deployment-scripts/master-deploy.sh
 
-# 6. (Optional) Setup Professional API Subdomain
-# For api.techdukaan.tech endpoints instead of direct IP access
-sudo chmod +x deployment-scripts/configure-nginx-reverse-proxy.sh
-sudo ./deployment-scripts/configure-nginx-reverse-proxy.sh
-# Then follow: API_SUBDOMAIN_SETUP_GUIDE.md for DNS and SSL
+# 6. (Optional) Setup Professional Dual Subdomain Architecture
+# For api.techdukaan.tech (Medusa) and search.techdukaan.tech (MeiliSearch)
+sudo chmod +x deployment-scripts/configure-dual-subdomain-nginx.sh
+sudo ./deployment-scripts/configure-dual-subdomain-nginx.sh
+# Then get SSL: sudo certbot --nginx -d api.techdukaan.tech -d search.techdukaan.tech
 
 # 7. Access your deployment:
 # API Health: http://[your-vm-ip]:9000/health
